@@ -5,11 +5,11 @@ curso de Arquitectura de Computadoras.
 
 ## Uso
 
-> [!NOTE]
+> [!TIP]
 > Si usas Nix, puedes entrar a un shell de desarrollo con todas las dependencias
 > necesarias ejecutando `nix-shell`.
 
-Este proyecto se puede compilar y ejecutar con [GNU Make] [Icarus Verilog] con el siguiente
+Este proyecto se puede compilar y ejecutar con [GNU Make] y [Icarus Verilog] con el siguiente
 comando:
 
 ```bash
