@@ -469,6 +469,9 @@ module fp_unpacker #(
     output wire [P_SINGLE-1:0] mant_a,
     output wire [P_SINGLE-1:0] mant_b
 );
+  localparam BIAS_HALF = 2 ** (E_HALF - 1) - 1;
+  localparam BIAS_SINGLE = 2 ** (E_SINGLE - 1) - 1;
+
   wire fp_single = (mode_fp == `FP_SINGLE);
 
   wire sign_a_half = op_a[N_HALF-1];
@@ -489,8 +492,12 @@ module fp_unpacker #(
   assign sign_a = fp_single ? sign_a_single : sign_a_half;
   assign sign_b = fp_single ? sign_b_single : sign_b_half;
 
-  assign exp_a  = fp_single ? exp_a_single : (exp_a_half == 0 ? 0 : (exp_a_half - 15 + 127));
-  assign exp_b  = fp_single ? exp_b_single : (exp_b_half == 0 ? 0 : (exp_b_half - 15 + 127));
+  assign exp_a  = fp_single
+    ? exp_a_single
+    : (exp_a_half == 0 ? 0 : (exp_a_half - BIAS_HALF + BIAS_SINGLE));
+  assign exp_b  = fp_single
+    ? exp_b_single
+    : (exp_b_half == 0 ? 0 : (exp_b_half - BIAS_HALF + BIAS_SINGLE));
 
   assign mant_a = fp_single ? mant_a_single : (mant_a_half << 13);
   assign mant_b = fp_single ? mant_b_single : (mant_b_half << 13);
@@ -513,7 +520,10 @@ module fp_packer #(
     output reg [N_SINGLE-1:0] result,
     output reg [4:0] flags_out
 );
-  wire [E_HALF-1:0] exp_half = exp - 127 + 15;
+  localparam BIAS_HALF = 2 ** (E_HALF - 1) - 1;
+  localparam BIAS_SINGLE = 2 ** (E_SINGLE - 1) - 1;
+
+  wire [E_HALF-1:0] exp_half = exp - BIAS_SINGLE + BIAS_HALF;
   wire [P_HALF-1:0] mant_half = mant[P_SINGLE+2-:P_HALF] + mant[P_SINGLE-P_HALF+2];  // round to nearest
 
   always @(*) begin
