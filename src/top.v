@@ -42,6 +42,7 @@ module top (
       .op_code(op_code),
       .mode_fp(mode_fp),
       .round_mode(round_mode),
+      .ready_in(1'b1),
 
       .start(start),
       .result(result),
@@ -70,7 +71,7 @@ module top (
       end
       S_RESULT_FLAGS: begin
         led = {27'b0, flags_reg};
-        next_state = S_RESULT_FLAGS;
+        next_state = S_RESULT_LO;
       end
       default: next_state = S_LOAD_A_LO;
     endcase
