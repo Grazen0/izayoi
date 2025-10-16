@@ -86,8 +86,6 @@ module top (
       op_code <= 3'b0;
       mode_fp <= 1'b0;
       start <= 1'b0;
-
-      led <= 16'b0;
     end else begin
       if (valid_out) begin
         result_reg <= result;
