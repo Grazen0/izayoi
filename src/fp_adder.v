@@ -496,63 +496,39 @@ module fp_unpacker #(
   assign mant_b = fp_single ? mant_b_single : (mant_b_half << 13);
 endmodule
 
-module fp_special_case_handler #(
-    parameter P = 23,
-    parameter E = 8,
-    parameter N = P + E + 1
+module fp_packer #(
+    parameter P_SINGLE = 23,
+    parameter E_SINGLE = 8,
+    parameter N_SINGLE = P_SINGLE + E_SINGLE + 1,
+    parameter P_HALF   = 10,
+    parameter E_HALF   = 5,
+    parameter N_HALF   = P_HALF + E_HALF + 1
 ) (
-    input wire sign_a,
-    input wire [E-1:0] exp_a,
-    input wire [P-1:0] mant_a,
-    input wire sign_b,
-    input wire [E-1:0] exp_b,
-    input wire [P-1:0] mant_b,
-    input wire start,
+    input wire sign,
+    input wire [E_SINGLE-1:0] exp,
+    input wire [P_SINGLE+3:0] mant,
+    input wire [4:0] flags_in,
+    input wire mode_fp,
 
-    output wire special_case,
-    output reg special_valid,
-    output reg [N-1:0] special_result,
-    output reg [4:0] special_flags
+    output reg [N_SINGLE-1:0] result,
+    output reg [4:0] flags_out
 );
-  localparam NAN = 32'h7FC00000;
-
-  wire is_nan_a = exp_a == {E{1'b1}} && mant_a != 0;
-  wire is_nan_b = exp_b == {E{1'b1}} && mant_b != 0;
-  wire is_inf_a = exp_a == {E{1'b1}} && mant_a == 0;
-  wire is_inf_b = exp_b == {E{1'b1}} && mant_b == 0;
-  wire is_zero_a = exp_a == 0 && mant_a == 0;
-  wire is_zero_b = exp_b == 0 && mant_b == 0;
-
-  assign special_case = is_nan_a | is_nan_b | is_inf_a | is_inf_b;
+  wire [E_HALF-1:0] exp_half = exp - 127 + 15;
+  wire [P_HALF-1:0] mant_half = mant[P_SINGLE+2-:P_HALF] + mant[P_SINGLE-P_HALF+2];  // round to nearest
 
   always @(*) begin
-    special_result = 32'b0;
-    special_flags  = 5'b0;
-    special_valid  = 1'b0;
+    flags_out = flags_in;
 
-    if (start && special_case) begin
-      special_valid = 1'b1;
+    if (mode_fp == `FP_SINGLE) begin
+      result = {sign, exp, mant[P_SINGLE+2:3]};
+    end else begin
+      result = {{(N_SINGLE - N_HALF) {1'b0}}, sign, exp_half, mant_half};
 
-      if (is_nan_a || is_nan_b) begin
-        // Some operand is NaN
-        special_result = NAN;
-        special_flags[`F_INVALID] = 1'b1;
-      end else if (is_inf_a && is_inf_b) begin
-        // Inf +- Inf
-        if (sign_a == sign_b) begin
-          special_result = {sign_a, {E{1'b1}}, {P{1'b0}}};  // +-Inf
-        end else begin
-          special_result = NAN;
-          special_flags[`F_INVALID] = 1'b1;
-        end
-      end else if (is_inf_a) begin
-        special_result = {sign_a, {E{1'b1}}, {P{1'b0}}};  // +-Inf
-      end else if (is_inf_b) begin
-        special_result = {sign_b, {E{1'b1}}, {P{1'b0}}};  // +-Inf
+      if (|mant[P_SINGLE-P_HALF-1:0]) begin
+        flags_out[`F_INEXACT] = 1'b1;
       end
     end
   end
-
 endmodule
 
 module fp_adder #(
@@ -592,37 +568,19 @@ module fp_adder #(
       .mant_b(mant_b)
   );
 
-  wire special_case, special_valid;
-  wire [N-1:0] special_result;
-  wire [  4:0] special_flags;
-
-  fp_special_case_handler special_handler (
-      .sign_a(sign_a),
-      .exp_a (exp_a),
-      .mant_a(mant_a),
-      .sign_b(sign_b),
-      .exp_b (exp_b),
-      .mant_b(mant_b),
-      .start (start),
-
-      .special_case  (special_case),
-      .special_valid (special_valid),
-      .special_result(special_result),
-      .special_flags (special_flags)
-  );
 
   wire align_valid, addsub_ready;
 
   wire [P+3:0] mant_a_aligned, mant_b_aligned;
   wire [E-1:0] exp_aligned;
   wire sign_a_aligned, sign_b_aligned;
-  wire round_mode_aligned;
+  wire round_mode_aligned, mode_fp_aligned;
 
   fp_align align (
       .clk  (clk),
       .rst_n(rst_n),
 
-      .valid_in(start && !special_case),
+      .valid_in(start),
       .ready_in(addsub_ready),
       .mant_a(mant_a),
       .exp_a(exp_a),
@@ -640,7 +598,9 @@ module fp_adder #(
       .sign_b_in(sign_b),
       .sign_b_out(sign_b_aligned),
       .round_mode_in(round_mode),
-      .round_mode_out(round_mode_aligned)
+      .round_mode_out(round_mode_aligned),
+      .mode_fp_in(mode_fp),
+      .mode_fp_out(mode_fp_aligned)
   );
 
   wire addsub_valid, normalize_ready;
@@ -648,7 +608,7 @@ module fp_adder #(
   wire sum_carry, sum_sign;
 
   wire [E-1:0] exp_addsub;
-  wire round_mode_addsub;
+  wire round_mode_addsub, mode_fp_addsub;
 
   fp_addsub addsub (
       .clk  (clk),
@@ -670,16 +630,17 @@ module fp_adder #(
       .exp_in(exp_aligned),
       .exp_out(exp_addsub),
       .round_mode_in(round_mode_aligned),
-      .round_mode_out(round_mode_addsub)
+      .round_mode_out(round_mode_addsub),
+      .mode_fp_in(mode_fp_aligned),
+      .mode_fp_out(mode_fp_addsub)
   );
 
   wire normalize_valid, round_ready;
 
   wire [P+3:0] mant_normalized;
   wire [E-1:0] exp_normalized;
-  wire sign_normalized;
-  wire round_mode_normalized;
-  wire [4:0] flags_normalized;
+  wire [  4:0] flags_normalized;
+  wire sign_normalized, round_mode_normalized, mode_fp_normalized;
 
   fp_normalize normalize (
       .clk  (clk),
@@ -701,16 +662,19 @@ module fp_adder #(
       .sign_in(sum_sign),
       .sign_out(sign_normalized),
       .round_mode_in(round_mode_addsub),
-      .round_mode_out(round_mode_normalized)
+      .round_mode_out(round_mode_normalized),
+      .mode_fp_in(mode_fp_addsub),
+      .mode_fp_out(mode_fp_normalized)
   );
 
   wire round_valid, renormalize_ready;
 
-  wire sign_rounded;
   wire [P+3:0] mant_rounded;
-  wire [E-1:0] exp_rounded;
   wire round_carry;
   wire [4:0] flags_rounded;
+
+  wire [E-1:0] exp_rounded;
+  wire sign_rounded, mode_fp_rounded;
 
   fp_round round (
       .clk  (clk),
@@ -728,18 +692,20 @@ module fp_adder #(
       .carry_out(round_carry),
       .flags_out(flags_rounded),
 
-      .exp_in  (exp_normalized),
-      .exp_out (exp_rounded),
-      .sign_in (sign_normalized),
-      .sign_out(sign_rounded)
+      .exp_in(exp_normalized),
+      .exp_out(exp_rounded),
+      .sign_in(sign_normalized),
+      .sign_out(sign_rounded),
+      .mode_fp_in(mode_fp_normalized),
+      .mode_fp_out(mode_fp_rounded)
   );
 
   wire renormalize_valid;
 
   wire [P+3:0] mant_renormalized;
   wire [E-1:0] exp_renormalized;
-  wire sign_renormalized;
   wire [4:0] flags_renormalized;
+  wire sign_renormalized, mode_fp_renormalized;
 
   fp_normalize renormalize (
       .clk  (clk),
@@ -758,13 +724,22 @@ module fp_adder #(
       .exp_out  (exp_renormalized),
       .flags_out(flags_renormalized),
 
-      .sign_in (sign_rounded),
-      .sign_out(sign_renormalized)
+      .sign_in(sign_rounded),
+      .sign_out(sign_renormalized),
+      .mode_fp_in(mode_fp_rounded),
+      .mode_fp_out(mode_fp_renormalized)
   );
 
-  wire [N-1:0] pipeline_result = {sign_renormalized, exp_renormalized, mant_renormalized[P+2:3]};
+  assign valid_out = renormalize_valid;
 
-  assign valid_out = special_valid | renormalize_valid;
-  assign result = special_valid ? special_result : pipeline_result;
-  assign flags = special_valid ? special_flags : flags_renormalized;
+  fp_packer packer (
+      .sign(sign_renormalized),
+      .exp(exp_renormalized),
+      .mant(mant_renormalized),
+      .flags_in(flags_renormalized),
+      .mode_fp(mode_fp_renormalized),
+
+      .result(result),
+      .flags_out(flags)
+  );
 endmodule

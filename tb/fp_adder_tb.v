@@ -7,13 +7,23 @@ module fp_adder_tb ();
   reg round_mode, mode_fp;
 
   wire [31:0] result;
-  wire valid_out;
-  wire [4:0] flags;
+  wire valid_out, ready_out;
+  wire [ 4:0] flags;
 
-  reg [31:0] result_reg;
-  reg [4:0] flags_reg;
+  reg  [31:0] result_reg;
+  reg  [ 4:0] flags_reg;
 
   always #5 clk = ~clk;
+
+  // No es buena idea sintetizar esto, existe para propósitos de simulación.
+  always @(posedge valid_out or posedge clk) begin
+    if (valid_out) begin
+      result_reg = result;
+      flags_reg  = flags;
+
+      $display("result: %h", result);
+    end
+  end
 
   fp_adder adder (
       .clk(clk),
@@ -26,8 +36,9 @@ module fp_adder_tb ();
       .start(start),
       .ready_in(1'b1),
 
-      .result(result),
       .valid_out(valid_out),
+      .ready_out(ready_out),
+      .result(result),
       .flags(flags)
   );
 
@@ -50,14 +61,14 @@ module fp_adder_tb ();
     send_op_single(32'h7F80_0000, 32'h7F80_0000, 3'b000);  // inf + inf = 7F80_0000 (inf)
     send_op_single(32'h7F80_0000, 32'hFF80_0000, 3'b000);  // inf - inf = 7FC0_0000 (nan)
 
-    send_op_half(16'h4680, 16'h4EB0, 3'b000);  // 6.5 + 26.75 =  (33.25)
-    send_op_half(16'h3B00, 16'h5702, 3'b000);  // 0.875 + 112.125 =  (113.0)
-    send_op_half(16'h0000, 16'h0000, 3'b000);  // 0.0 + 0.0 = 0000 (0.0)
+    send_op_half(16'h4680, 16'h4EB0, 3'b000);  // 6.5 + 26.75 = 5028 (33.25)
+    send_op_half(16'h3B00, 16'h5702, 3'b000);  // 0.875 + 112.125 = 5710 (113.0)
+    send_op_half(16'h0000, 16'h0000, 3'b000);  // 0.0 + 0.0 = 0000 (0.0) // TODO: never concludes
 
-    #100 $finish();
+    #200 $finish();
   end
 
-  task send_op_single(input [31:0] a, input [31:0] b, input [2:0] op);
+  task send_op_single(input reg [31:0] a, input reg [31:0] b, input reg [2:0] op);
     begin
       @(negedge clk);
 
@@ -69,19 +80,13 @@ module fp_adder_tb ();
 
       start = 1'b1;
       @(posedge clk);
-      start = 1'b0;
+      #2 start = 1'b0;
 
-      // Wait for valid_out
-      while (!valid_out) @(posedge clk);
-
-      result_reg = result;
-      flags_reg  = flags;
-
-      $display("a = %h, b = %h op=%0d  =>  result = %h", a, b, op, result);
+      while (!ready_out) @(posedge clk);
     end
   endtask
 
-  task send_op_half(input [15:0] a, input [15:0] b, input [2:0] op);
+  task send_op_half(input reg [15:0] a, input reg [15:0] b, input reg [2:0] op);
     begin
       @(negedge clk);
 
@@ -93,15 +98,9 @@ module fp_adder_tb ();
 
       start = 1'b1;
       @(posedge clk);
-      start = 1'b0;
+      #2 start = 1'b0;
 
-      // Wait for valid_out
-      while (!valid_out) @(posedge clk);
-
-      result_reg = result;
-      flags_reg  = flags;
-
-      $display("a = %h, b = %h op=%0d  =>  result = %h", a, b, op, result);
+      while (!ready_out) @(posedge clk);
     end
   endtask
 endmodule
