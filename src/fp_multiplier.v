@@ -6,7 +6,7 @@ module mul_decode (
     input wire [31:0] op_a,
     input wire [31:0] op_b,
 
-    input wire precision_mode,
+    input wire mode_fp,
 
     output reg sign_a,
     output reg sign_b,
@@ -24,7 +24,7 @@ module mul_decode (
 );
 
   always @(*) begin
-    if (precision_mode == `HALF_PRECISION) begin
+    if (mode_fp == `HALF_PRECISION) begin
       sign_a = op_a[15];
       sign_b = op_b[15];
 
@@ -342,7 +342,7 @@ module fp_multiplier (
 
     input wire [31:0] op_a,
     input wire [31:0] op_b,
-    input wire precision_mode,
+    input wire mode_fp,
     input wire round_mode,
 
     input  wire start,
@@ -391,7 +391,7 @@ module fp_multiplier (
       .op_a(op_a),
       .op_b(op_b),
 
-      .precision_mode(precision_mode),
+      .mode_fp(mode_fp),
 
       .sign_a(sign_a),
       .sign_b(sign_b),
