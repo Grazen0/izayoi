@@ -12,14 +12,14 @@ module fp_decoder (
     output wire divider_start,
     output wire divider_ready_in
 );
-    assign adder_start = start && (op_code == `OP_ADD || op_code == `OP_SUB);
-    assign adder_ready_in = ready_in || (op_code != `OP_ADD && op_code != `OP_SUB);
+  assign adder_start = start && (op_code == `OP_ADD || op_code == `OP_SUB);
+  assign adder_ready_in = ready_in || (op_code != `OP_ADD && op_code != `OP_SUB);
 
-    assign multiplier_start = start && op_code == `OP_MUL;
-    assign multiplier_ready_in = ready_in || op_code != `OP_MUL;
+  assign multiplier_start = start && op_code == `OP_MUL;
+  assign multiplier_ready_in = ready_in || op_code != `OP_MUL;
 
-    assign divider_start = start && op_code == `OP_DIV;
-    assign divider_ready_in = ready_in || op_code != `OP_DIV;
+  assign divider_start = start && op_code == `OP_DIV;
+  assign divider_ready_in = ready_in || op_code != `OP_DIV;
 endmodule
 
 module float_alu #(
@@ -42,83 +42,110 @@ module float_alu #(
     output reg [N-1:0] result,
     output reg [4:0] flags
 );
-    wire adder_start, adder_ready_in, multiplier_start, multiplier_ready_in,
+  wire adder_start, adder_ready_in, multiplier_start, multiplier_ready_in,
     divider_start, divider_ready_in;
 
-    fp_decoder decoder (
-        .op_code(op_code),
-        .start(start),
-        .ready_in(ready_in),
-        .adder_start(adder_start),
-        .adder_ready_in(adder_ready_in),
-        .multiplier_start(multiplier_start),
-        .multiplier_ready_in(multiplier_ready_in),
-        .divider_start(divider_start),
-        .divider_ready_in(divider_ready_in)
-    );
+  fp_decoder decoder (
+      .op_code(op_code),
+      .start(start),
+      .ready_in(ready_in),
+      .adder_start(adder_start),
+      .adder_ready_in(adder_ready_in),
+      .multiplier_start(multiplier_start),
+      .multiplier_ready_in(multiplier_ready_in),
+      .divider_start(divider_start),
+      .divider_ready_in(divider_ready_in)
+  );
 
-    wire adder_valid, adder_ready;
-    wire [N-1:0] adder_result;
-    wire [  4:0] adder_flags;
+  wire adder_valid, adder_ready;
+  wire [N-1:0] adder_result;
+  wire [  4:0] adder_flags;
 
-    fp_adder adder (
-        .clk(clk),
-        .rst_n(rst_n),
-        .op_a(op_a),
-        .op_b(op_b),
-        .mode_fp(mode_fp),
-        .round_mode(round_mode),
-        .sub(op_code[0]),
-        .start(adder_start),
-        .ready_in(adder_ready_in),
+  fp_adder adder (
+      .clk(clk),
+      .rst_n(rst_n),
+      .op_a(op_a),
+      .op_b(op_b),
+      .mode_fp(mode_fp),
+      .round_mode(round_mode),
+      .sub(op_code[0]),
+      .start(adder_start),
+      .ready_in(adder_ready_in),
 
-        .valid_out(adder_valid),
-        .ready_out(adder_ready),
-        .result(adder_result),
-        .flags(adder_flags)
-    );
+      .valid_out(adder_valid),
+      .ready_out(adder_ready),
+      .result(adder_result),
+      .flags(adder_flags)
+  );
 
-    wire multiplier_valid, multiplier_ready;
-    wire [N-1:0] multiplier_result;
-    wire [  4:0] multiplier_flags;
+  wire multiplier_valid, multiplier_ready;
+  wire [N-1:0] multiplier_result;
+  wire [  4:0] multiplier_flags;
 
-    fp_multiplier multiplier (
-        .clk(clk),
-        .rst_n(rst_n),
-        .op_a(op_a),
-        .op_b(op_b),
-        .mode_fp(mode_fp),
-        .round_mode(round_mode),
-        .start(multiplier_start),
-        .ready_in(multiplier_ready_in),
+  fp_multiplier multiplier (
+      .clk(clk),
+      .rst_n(rst_n),
+      .op_a(op_a),
+      .op_b(op_b),
+      .mode_fp(mode_fp),
+      .round_mode(round_mode),
+      .start(multiplier_start),
+      .ready_in(multiplier_ready_in),
 
-        .valid_out(multiplier_valid),
-        .ready_out(multiplier_ready),
-        .result(multiplier_result),
-        .flags(multiplier_flags)
-    );
+      .valid_out(multiplier_valid),
+      .ready_out(multiplier_ready),
+      .result(multiplier_result),
+      .flags(multiplier_flags)
+  );
 
-    always @(*) begin
-        case (op_code)
-            `OP_ADD, `OP_SUB: begin
-                valid_out = adder_valid;
-                ready_out = adder_ready;
-                result = adder_result;
-                flags = adder_flags;
-            end
-            `OP_MUL: begin
-                valid_out = multiplier_valid;
-                ready_out = multiplier_ready;
-                result = multiplier_result;
-                flags = multiplier_flags;
-            end
-            default: begin
-                valid_out = 1'b0;
-                ready_out = 1'b0;
-                result = 32'b0;
-                flags = 5'b0;
-            end
-        endcase
-    end
+  wire divider_valid, divider_ready;
+  wire [N-1:0] divider_result;
+  wire [  4:0] divider_flags;
+
+
+  fp_divider divider (
+      .clk(clk),
+      .rst_n(rst_n),
+      .op_a(op_a),
+      .op_b(op_b),
+      .mode_fp(mode_fp),
+      .round_mode(round_mode),
+      .start(divider_start),
+      .ready_in(divider_ready_in),
+
+      .valid_out(divider_valid),
+      .ready_out(divider_ready),
+      .result(divider_result),
+      .flags(divider_flags)
+  );
+
+  always @(*) begin
+    case (op_code)
+      `OP_ADD, `OP_SUB: begin
+        valid_out = adder_valid;
+        ready_out = adder_ready;
+        result = adder_result;
+        flags = adder_flags;
+      end
+      `OP_MUL: begin
+        valid_out = multiplier_valid;
+        ready_out = multiplier_ready;
+        result = multiplier_result;
+        flags = multiplier_flags;
+      end
+      `OP_DIV: begin
+        valid_out = divider_valid;
+        ready_out = divider_ready;
+        result = divider_result;
+        flags = divider_flags;
+      end
+      default: begin
+        valid_out = 1'b0;
+        ready_out = 1'b0;
+        result = 32'b0;
+        flags = 5'b0;
+      end
+    endcase
+  end
 endmodule
 
