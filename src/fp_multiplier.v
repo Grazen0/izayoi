@@ -385,6 +385,13 @@ module mul_round (
   wire        round_up = G && (R | S | mant_lsb);
   wire [24:0] mant_rounded = mant_norm[46:23] + {23'b0, round_up};
 
+  wire [ 8:0] exp_post = mant_rounded[24] ? exp_norm + 9'd1 : exp_norm;
+  wire [22:0] mant_post = mant_rounded[24] ? mant_rounded[23:1] : mant_rounded[22:0];
+
+  wire        overflow = (exp_post[8] || exp_post[7:0] == 8'hFF);
+  wire        underflow = (exp_post[7:0] == 8'h00) && (mant_post != 0);
+  wire        inexact = (G | R | S);
+
   always @(*) begin
     final_exp_next         = final_exp;
     final_mant_next        = final_mant;
@@ -394,12 +401,15 @@ module mul_round (
     spec_flags_out_next    = spec_flags_out;
 
     if (valid_in && ready_out) begin
-      final_exp_next         = mant_rounded[24] ? exp_norm[7:0] + 8'd1 : exp_norm[7:0];
-      final_mant_next        = mant_rounded[24] ? mant_rounded[23:1] : mant_rounded[22:0];
-      final_sign_out_next    = final_sign_in;
+      final_exp_next = overflow ? 8'hFF : exp_post[7:0];
+      final_mant_next = overflow ? 23'h0 : mant_post;
+      final_sign_out_next = final_sign_in;
       spec_override_out_next = spec_override_in;
-      spec_result_out_next   = spec_result_in;
-      spec_flags_out_next    = spec_flags_in;
+      spec_result_out_next = spec_result_in;
+      spec_flags_out_next    = spec_flags_in |
+        (overflow ? `FLAG_OF : 5'b0) |
+        (underflow ? `FLAG_UF : 5'b0) |
+        (inexact ? `FLAG_NX : 5'b0);
     end
   end
 
@@ -456,7 +466,7 @@ module mul_pack (
   wire [ 4:0] flags_next;
 
   assign result_next = spec_override ? spec_result : final_result;
-  assign flags_next  = spec_override ? spec_flags : 5'b0;
+  assign flags_next  = spec_flags;
 
   assign ready_out   = !valid_out || ready_in;
 
