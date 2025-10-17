@@ -550,7 +550,7 @@ module fp_adder #(
     input wire rst_n,
     input wire [N-1:0] op_a,
     input wire [N-1:0] op_b,
-    input wire [2:0] op_code,
+    input wire sub,
     input wire mode_fp,
     input wire round_mode,
     input wire start,
@@ -578,6 +578,7 @@ module fp_adder #(
       .mant_b(mant_b)
   );
 
+  wire sign_b_corrected = sign_b ^ sub;
 
   wire align_valid, addsub_ready;
 
@@ -605,7 +606,7 @@ module fp_adder #(
 
       .sign_a_in(sign_a),
       .sign_a_out(sign_a_aligned),
-      .sign_b_in(sign_b),
+      .sign_b_in(sign_b_corrected),
       .sign_b_out(sign_b_aligned),
       .round_mode_in(round_mode),
       .round_mode_out(round_mode_aligned),
