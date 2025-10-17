@@ -1,24 +1,32 @@
 `timescale 1ns / 1ps
 
 module top_tb ();
-  reg clk, rst;
+  reg clk, clk_ext, rst;
   reg  [15:0] sw;
 
   wire [15:0] led;
+  wire [ 3:0] anode;
+  wire [ 7:0] seg;
+
+  always #1 clk = ~clk;
+  always #5 clk_ext = ~clk_ext;
 
   top t (
       .clk(clk),
+      .clk_ext(clk_ext),
       .rst(rst),
-      .sw (sw),
-      .led(led)
-  );
+      .sw(sw),
 
-  always #5 clk = ~clk;
+      .led  (led),
+      .anode(anode),
+      .seg  (seg)
+  );
 
   initial begin
     $dumpvars(0, top_tb);
 
     clk = 1;
+    clk_ext = 1;
     rst = 1;
 
     #5 rst = 0;
