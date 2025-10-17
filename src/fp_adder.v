@@ -270,7 +270,6 @@ module fp_normalize #(
                     // Got infinity
                     mant_next = {(P + 4) {1'b0}};
                     flags_next[`F_OVERFLOW] = 1'b1;
-                    flags_next[`F_INEXACT] = 1'b1;
                 end
             end else begin
                 mant_next = mant_in;
