@@ -1,6 +1,6 @@
 `default_nettype none
 
-`define HALF_PRECISION 1'b1
+`define HALF_PRECISION 1'b0
 
 module mul_decode (
     input wire [31:0] op_a,
