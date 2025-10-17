@@ -55,12 +55,13 @@ module top (
       .seg(seg)
   );
 
-  fp_adder adder (
+  float_alu alu (
       .clk  (clk_ext),
       .rst_n(~rst),
 
       .op_a(op_a),
       .op_b(op_b),
+      .op_code(op_code),
       .mode_fp(mode_fp),
       .round_mode(round_mode),
       .ready_in(1'b1),
