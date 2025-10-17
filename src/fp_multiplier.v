@@ -69,6 +69,8 @@ module mul_exception (
     input wire is_inf_a,
     input wire is_inf_b,
 
+    input wire initial_flags;
+
     output reg [31:0] spec_result,
     output reg [4:0] spec_flags,
     output reg spec_override,
@@ -120,7 +122,7 @@ module mul_exception (
 
       spec_override_next = 1'b0;
       spec_result_next   = 32'b0;
-      spec_flags_next    = 5'b0;
+      spec_flags_next    = initial_flags;
 
       if (is_nan_a || is_nan_b) begin
         spec_override_next = 1'b1;
@@ -502,6 +504,8 @@ module fp_multiplier (
     output wire valid_out,
     output wire ready_out,
 
+    input wire [4:0] initial_flags;
+
     output wire [31:0] result,
     output wire [ 4:0] flags
 );
@@ -557,6 +561,8 @@ module fp_multiplier (
       .is_nan_b (is_nan_b),
       .is_inf_a (is_inf_a),
       .is_inf_b (is_inf_b),
+
+      .initial_flags(initial_flags),
 
       .spec_result  (spec_result),
       .spec_flags   (spec_flags),
