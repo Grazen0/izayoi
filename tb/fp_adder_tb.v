@@ -15,8 +15,10 @@ module fp_adder_tb ();
   always #5 clk = ~clk;
 
   // No es buena idea sintetizar esto, existe para propósitos de simulación.
-  always @(posedge valid_out or posedge clk) begin
-    if (valid_out && result != result_reg) begin
+  always @(posedge valid_out or result) begin
+    #1;
+
+    if (valid_out) begin
       result_reg = result;
       flags_reg  = flags;
 
@@ -49,54 +51,60 @@ module fp_adder_tb ();
     sub   = 0;
     #3 rst_n = 1;
 
-    send_op_single(32'h41A6_0000, 32'h4010_0000, 0);  // 20.75 + 2.25 = 41B8_0000 (23.0)
-    send_op_single(32'h4160_0000, 32'hC144_0000, 0);  // 14 - 12.25 = 3FE0_0000 (1.75)
-    send_op_single(32'h4102_0000, 32'hC104_0000, 0);  // 8.125 - 8.25 = BE00_0000 (-0.125)
-    send_op_single(32'h40A8_0000, 32'h4194_0000, 0);  // 5.25 + 18.5 = 41BE_0000 (23.75)
-    send_op_single(32'h40A8_0000, 32'h4194_0000, 1);  // 5.25 - 18.5 = C154_0000 (23.75)
-    // send_op_single(32'h0000_0000, 32'h0000_0000, 0);  // 0.0 + 0.0 = 0000_0000 (0.0)
-    // send_op_single(32'h0000_0000, 32'h8000_0000, 0);  // 0.0 - 0.0 = 0000_0000 (0.0)
-    // send_op_single(32'h8000_0000, 32'h0000_0000, 0);  // -0.0 + 0.0 = 8000_0000 (-0.0)
-    // send_op_single(32'h8000_0000, 32'h8000_0000, 0);  // -0.0 - 0.0 = 8000_0000 (-0.0)
-    // send_op_single(32'h0000_0002, 32'h0000_0002, 0);  // 1.0e-38 + 1.0e-38 = 0000_0004
-    // send_op_single(32'h7F80_0000, 32'h7F80_0000, 0);  // inf + inf = 7F80_0000 (inf)
-    // send_op_single(32'h7F80_0000, 32'hFF80_0000, 0);  // inf - inf = 7FC0_0000 (nan)
+    send_single(32'h41A6_0000, 32'h4010_0000, 0);  // 20.75 + 2.25 = 41B8_0000 (23.0)
+    send_single(32'h4160_0000, 32'hC144_0000, 0);  // 14 - 12.25 = 3FE0_0000 (1.75)
+    send_single(32'h4102_0000, 32'hC104_0000, 1);  // 8.125 - (-8.25) = 4183_0000 (16.375)
+    send_single(32'h40A8_0000, 32'h4194_0000, 0);  // 5.25 + 18.5 = 41BE_0000 (23.75)
+    send_single(32'h4229_3333, 32'h4188_28F6, 1);  // 42.3 - 17.02 = 41CA_3D70 (~25.27999)
 
-    // 2.2696568e38 + 1.6221822e-36 = 7F2A_C000 (2.2696568e38)
-    send_op_single(32'h7F2A_C000, 32'h040A_0000, 0);
+    // Special cases
+    send_single(32'h7F7F_FFFF, 32'h7F7F_FFFF, 0);  // 3.4e38 + 3.4e38 = inf (+ overflow)
+    send_single(32'hFF7F_FFFF, 32'hFF7F_FFFF, 0);  // -3.4e38 - 3.4e38 = -inf (+ overflow)
+    send_single(32'h0000_0000, 32'h0000_0000, 0);  // 0.0 + 0.0 = 0000_0000 (0.0)
+    send_single(32'h0000_0000, 32'h8000_0000, 0);  // 0.0 - 0.0 = 0000_0000 (0.0)
+    send_single(32'h8000_0000, 32'h0000_0000, 0);  // -0.0 + 0.0 = 8000_0000 (-0.0)
+    send_single(32'h8000_0000, 32'h8000_0000, 0);  // -0.0 - 0.0 = 8000_0000 (-0.0)
+    send_single(32'h0000_0002, 32'h0000_0002, 0);  // 1.0e-38 + 1.0e-38 = 0000_0004
+    send_single(32'h7F80_0000, 32'h7F80_0000, 0);  // inf + inf = 7F80_0000 (inf)
+    send_single(32'h7F80_0000, 32'hFF80_0000, 0);  // inf - inf = 7FC0_0000 (nan)
+    send_single(32'h7F2A_C000, 32'h040A_0000, 0);  // 2.26e38 + 1.62e-36 = 7F2A_C000 (~2.26e38)
 
-    // send_op_half(16'h4680, 16'h4EB0, 0);  // 6.5 + 26.75 = 5028 (33.25)
-    // send_op_half(16'h3B00, 16'h5702, 0);  // 0.875 + 112.125 = 5710 (113.0)
-    // send_op_half(16'h0000, 16'h0000, 0);  // 0.0 + 0.0 = 0000 (0.0) // TODO: never concludes
+    send_half(16'h4680, 16'h4EB0, 0);  // 6.5 + 26.75 = 5028 (33.25)
+    send_half(16'h3B00, 16'h5702, 0);  // 0.875 + 112.125 = 5710 (113.0)
+    send_half(16'h0000, 16'h0000, 0);  // 0.0 + 0.0 = 4000 (2.0?)
 
     #200 $finish();
   end
 
-  task send_op_single(input reg [31:0] a, input reg [31:0] b, input reg s);
+  task send_single(input reg [31:0] a, input reg [31:0] b, input reg s);
     begin
       mode_fp = 1'b1;  // single
       send(a, b, s);
     end
   endtask
 
-  task send_op_half(input reg [15:0] a, input reg [15:0] b, input reg s);
+  task send_half(input reg [15:0] a, input reg [15:0] b, input reg s);
     begin
       mode_fp = 1'b0;  // half
-      send(a, b, s);
+      send({16'b0, a}, {16'b0, b}, s);
     end
   endtask
 
-  task send(input reg [15:0] a, input reg [15:0] b, input reg s);
+  task send(input reg [31:0] a, input reg [31:0] b, input reg s);
     begin
-      op_a = {16'b0, a};
-      op_b = {16'b0, b};
+      op_a = a;
+      op_b = b;
       round_mode = 1'b0;  // nearest even
+      sub = s;
 
       start = 1'b1;
       @(posedge clk);
       #2 start = 1'b0;
 
-      while (!ready_out) @(posedge clk);
+      while (!ready_out) begin
+        @(posedge clk);
+        #1;
+      end
     end
   endtask
 endmodule
