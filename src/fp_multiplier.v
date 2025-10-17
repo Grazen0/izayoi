@@ -1,13 +1,5 @@
 `default_nettype none
 
-`define HALF_PRECISION 1'b0
-
-`define FLAG_NV 5'b10000
-`define FLAG_DZ 5'b01000
-`define FLAG_OF 5'b00100
-`define FLAG_UF 5'b00010
-`define FLAG_NX 5'b00001
-
 module mul_decode (
     input wire [31:0] op_a,
     input wire [31:0] op_b,
@@ -28,9 +20,8 @@ module mul_decode (
     output wire is_inf_a,
     output wire is_inf_b
 );
-
   always @(*) begin
-    if (mode_fp == `HALF_PRECISION) begin
+    if (mode_fp == `FP_HALF) begin
       sign_a = op_a[15];
       sign_b = op_b[15];
 
@@ -133,12 +124,12 @@ module mul_exception (
 
       if (is_nan_a || is_nan_b) begin
         spec_override_next = 1'b1;
-        spec_result_next   = {1'b0, 8'hFF, 23'h400000};
-        spec_flags_next    = `FLAG_NV;
+        spec_result_next = {1'b0, 8'hFF, 23'h400000};
+        spec_flags_next[`F_INVALID] = 1'b1;
       end else if ((is_inf_a && is_zero_b) || (is_inf_b && is_zero_a)) begin
         spec_override_next = 1'b1;
-        spec_result_next   = {1'b1, 8'hFF, 23'h400000};
-        spec_flags_next    = `FLAG_NV;
+        spec_result_next = {1'b1, 8'hFF, 23'h400000};
+        spec_flags_next[`F_INVALID] = 1'b1;
       end else if (is_inf_a || is_inf_b) begin
         spec_override_next = 1'b1;
         spec_result_next   = {final_sign, 8'hFF, 23'h0};
