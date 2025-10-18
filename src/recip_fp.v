@@ -98,12 +98,16 @@ module recip_fp #(parameter TYPE = 32)(
             end else begin
                 tmp = {1'b0, frac_in};
                 shift_count = 0;
-                for (i = M_WIDTH-1; i >= 0; i = i - 1) begin
-                    if (tmp[i]) begin
-                        shift_count = (M_WIDTH-1) - i;
-                        i = -1;
+
+                begin : search_loop
+                    for (i = M_WIDTH-1; i >= 0; i = i - 1) begin
+                        if (tmp[i]) begin
+                            shift_count = (M_WIDTH-1) - i;
+                            disable search_loop;
+                        end
                     end
                 end
+
                 if (tmp == 0) begin
                     out_bits = {out_sign, {EXP{1'b0}}, {FRAC{1'b0}}};
                     except_flags = 0;
