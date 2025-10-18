@@ -16,10 +16,12 @@ module fp_divider (
     output wire [ 4:0] flags
 );
   wire [31:0] b_inv;
+  wire [ 4:0] recip_flags;
 
   recip_fp recip (
-      .in_bits (op_b),
-      .out_bits(b_inv)
+      .in_bits(op_b),
+      .out_bits(b_inv),
+      .except_flags(recip_flags)
   );
 
   fp_multiplier multiplier (
@@ -31,6 +33,7 @@ module fp_divider (
       .mode_fp(mode_fp),
       .round_mode(round_mode),
 
+      .initial_flags(recip_flags),
       .start(start),
       .ready_in(ready_in),
       .valid_out(valid_out),

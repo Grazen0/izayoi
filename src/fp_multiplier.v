@@ -1,4 +1,5 @@
 `default_nettype none
+`include "macros.vh"
 
 module mul_decode (
     input wire [31:0] op_a,
@@ -69,7 +70,7 @@ module mul_exception (
     input wire is_inf_a,
     input wire is_inf_b,
 
-    input wire initial_flags;
+    input wire [4:0] initial_flags,
 
     output reg [31:0] spec_result,
     output reg [4:0] spec_flags,
@@ -408,10 +409,11 @@ module mul_round (
       final_sign_out_next = final_sign_in;
       spec_override_out_next = spec_override_in;
       spec_result_out_next = spec_result_in;
-      spec_flags_out_next    = spec_flags_in |
-        (overflow ? `FLAG_OF : 5'b0) |
-        (underflow ? `FLAG_UF : 5'b0) |
-        (inexact ? `FLAG_NX : 5'b0);
+      spec_flags_out_next = spec_flags_in;
+
+      if (overflow) spec_flags_out_next[`F_OVERFLOW] = 1'b1;
+      if (underflow) spec_flags_out_next[`F_UNDERFLOW] = 1'b1;
+      if (inexact) spec_flags_out_next[`F_INEXACT] = 1'b1;
     end
   end
 
@@ -504,7 +506,7 @@ module fp_multiplier (
     output wire valid_out,
     output wire ready_out,
 
-    input wire [4:0] initial_flags;
+    input wire [4:0] initial_flags,
 
     output wire [31:0] result,
     output wire [ 4:0] flags

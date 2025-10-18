@@ -89,6 +89,7 @@ module float_alu #(
       .op_b(op_b),
       .mode_fp(mode_fp),
       .round_mode(round_mode),
+      .initial_flags(5'b0),
       .start(multiplier_start),
       .ready_in(multiplier_ready_in),
 
