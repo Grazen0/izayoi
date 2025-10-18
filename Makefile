@@ -19,6 +19,7 @@ all: $(TARGETS)
 
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -f dump.vcd
 
 run: $(BUILD_DIR)/$(TB)
 	@if [ -z "$(TB)" ]; then \
