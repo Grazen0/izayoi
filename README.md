@@ -16,9 +16,9 @@ comando:
 make run TB=<nombre-del-testbench>
 ```
 
-Por ejemplo, ejecutar este comando con `TB=float_alu_tb` compilará y ejecutará
-el testbench en `tb/float_alu_tb.v`. Puedes ver todos los testbenches
-disponibles [aquí][testbenches].
+Por ejemplo, ejecutar este comando con `TB=float_alu/add_single_tb` compilará y
+ejecutará el testbench en `tb/float_alu/add_single_tb.v`. Puedes ver todos los
+testbenches disponibles [aquí][testbenches].
 
 Todos los testbenches generan un archivo `dump.vcd` en la raíz del proyecto.
 Este archivo contiene waveforms que se pueden visualizar con [GTKWave] con el
