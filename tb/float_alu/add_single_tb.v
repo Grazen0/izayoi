@@ -58,7 +58,9 @@ module add_single_tb ();
 
     // Normal cases
     test(`OP_ADD, 32'h41A6_0000, 32'h4010_0000, 32'h41B8_0000);  // 20.75 + 2.25 = 23.0
+    test(`OP_ADD, 32'h4010_0000, 32'h41A6_0000, 32'h41B8_0000);  // 2.25 + 20.75 = 23.0
     test(`OP_ADD, 32'h4160_0000, 32'hC144_0000, 32'h3FE0_0000);  // 14 + (-12.25) = 1.75
+    test(`OP_ADD, 32'hC144_0000, 32'h4160_0000, 32'h3FE0_0000);  // (-12.25) + 14 = 1.75
     test(`OP_ADD, 32'h4102_0000, 32'h4104_0000, 32'h4183_0000);  // 8.125 + 8.25 = 16.375
     test(`OP_ADD, 32'h40A8_0000, 32'h4194_0000, 32'h41BE_0000);  // 5.25 + 18.5 = 23.75
     test(`OP_ADD, 32'h4229_3333, 32'hC188_28F6, 32'h41CA_3D70);  // 42.3 + (-17.02) = ~25.27999
@@ -77,6 +79,7 @@ module add_single_tb ();
     test(`OP_ADD, `ZERO, `ZERO, `ZERO);  // 0.0 + 0.0 = 0.0
     test(`OP_ADD, `ZERO, `NEG_ZERO, `ZERO);  // 0.0 + (-0.0) = 0.0
     test(`OP_ADD, `INF, 32'h4010_0000, `INF);  // Inf + 2.25 = Inf
+    test(`OP_ADD, 32'h4010_0000, `INF, `INF);  // 2.25 + Inf = Inf
     test(`OP_ADD, `NEG_INF, 32'h4010_0000, `NEG_INF);  // -Inf + 2.25 = -Inf
     test(`OP_ADD, `NAN, 32'hC188_28F6, `NAN);  // NaN + 42.3 = NaN, invalid
     test(`OP_ADD, `NAN, `NAN, `NAN);  // NaN + NaN = NaN, invalid

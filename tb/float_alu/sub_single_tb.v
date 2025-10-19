@@ -75,6 +75,7 @@ module sub_single_tb ();
     test(`OP_SUB, `ZERO, `ZERO, `ZERO);  // 0.0 - 0.0 = 0.0
     test(`OP_SUB, `ZERO, `NEG_ZERO, `ZERO);  // 0.0 - (-0.0) = 0.0
     test(`OP_SUB, `INF, 32'h4010_0000, `INF);  // Inf - 2.25 = Inf
+    test(`OP_SUB, 32'h4010_0000, `INF, `NEG_INF);  // 2.25 - Inf = -Inf
     test(`OP_SUB, `NEG_INF, 32'h4010_0000, `NEG_INF);  // -Inf - 2.25 = -Inf
     test(`OP_SUB, `NEG_INF, `NEG_INF, `NAN);  // -Inf - (-Inf) = NaN
 
