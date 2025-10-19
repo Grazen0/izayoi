@@ -150,6 +150,7 @@ module fp_addsub #(
     output reg [P+3:0] sum,
     output reg carry_out,
     output reg sign_out,
+    output reg [4:0] flags_out,
 
     input wire [E-1:0] exp_in,
     output reg [E-1:0] exp_out,
@@ -162,6 +163,7 @@ module fp_addsub #(
 
   reg [P+3:0] sum_next;
   reg carry_out_next, sign_out_next;
+  reg [4:0] flags_out_next;
 
   reg [P+3:0] mant_big, mant_small;
   reg sign_big;
@@ -174,6 +176,7 @@ module fp_addsub #(
       exp_out_next = exp_in;
       round_mode_out_next = round_mode_in;
       mode_fp_out_next = mode_fp_in;
+      flags_out_next = 5'b0;
 
       if (is_a_nan || is_b_nan) begin
         // Result must be NaN
@@ -181,12 +184,14 @@ module fp_addsub #(
         sum_next = {2'b11, {(P + 2) {1'b0}}};
         carry_out_next = 1'b0;
         sign_out_next = 1'b0;
+        flags_out_next[`F_INVALID] = 1'b1;
       end else if (is_a_inf && is_b_inf && sign_a != sign_b) begin
         // Result must be NaN (again)
         exp_out_next = 8'hFF;
         sum_next = {2'b11, {(P + 2) {1'b0}}};
         carry_out_next = 1'b0;
         sign_out_next = 1'b0;
+        flags_out_next[`F_INVALID] = 1'b1;
       end else if (is_a_inf) begin
         // Result must be Inf (towards A)
         exp_out_next = 8'hFF;
@@ -201,7 +206,6 @@ module fp_addsub #(
         sign_out_next = sign_b;
       end else begin
         // Regular operations
-
         if (mant_a_aligned >= mant_b_aligned) begin
           mant_big   = mant_a_aligned;
           mant_small = mant_b_aligned;
@@ -227,6 +231,7 @@ module fp_addsub #(
       sum_next = sum;
       carry_out_next = carry_out;
       sign_out_next = sign_out;
+      flags_out_next = flags_out;
 
       exp_out_next = exp_out;
       round_mode_out_next = round_mode_out;
@@ -239,6 +244,7 @@ module fp_addsub #(
       sum            <= {(P + 3) {1'b0}};
       carry_out      <= 1'b0;
       sign_out       <= 1'b0;
+      flags_out      <= 5'b0;
 
       valid_out      <= 1'b0;
 
@@ -249,6 +255,7 @@ module fp_addsub #(
       sum            <= sum_next;
       carry_out      <= carry_out_next;
       sign_out       <= sign_out_next;
+      flags_out      <= flags_out_next;
 
       valid_out      <= !ready_in ? valid_out : valid_in;
 
@@ -666,6 +673,7 @@ module fp_adder #(
   wire addsub_valid, normalize_ready;
   wire [P+3:0] sum;
   wire sum_carry, sum_sign;
+  wire [  4:0] sum_flags;
 
   wire [E-1:0] exp_addsub;
   wire round_mode_addsub, mode_fp_addsub;
@@ -690,6 +698,7 @@ module fp_adder #(
       .sum(sum),
       .carry_out(sum_carry),
       .sign_out(sum_sign),
+      .flags_out(sum_flags),
 
       .exp_in(exp_aligned),
       .exp_out(exp_addsub),
@@ -715,7 +724,7 @@ module fp_adder #(
       .mant_in(sum),
       .exp_in(exp_addsub),
       .carry(sum_carry),
-      .flags_in(5'b0),
+      .flags_in(sum_flags),
 
       .ready_out(normalize_ready),
       .valid_out(normalize_valid),
