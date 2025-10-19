@@ -15,4 +15,12 @@
 `define FP_HALF 0
 `define FP_SINGLE 1
 
+`define INF 32'h7F80_0000
+`define NEG_INF 32'hFF80_0000
+`define NAN 32'h7FC0_0000
+
+`define INF_H 32'h7C00
+`define NEG_INF_H 32'hFC00
+`define NAN_H 32'h7E00
+
 `endif
