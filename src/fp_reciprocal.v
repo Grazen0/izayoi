@@ -1,6 +1,6 @@
 `include "macros.vh"
 
-module recip_fp #(
+module fp_reciprocal #(
     parameter TYPE = 32
 ) (
     input  wire [TYPE-1:0] in_bits,

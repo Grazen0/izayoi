@@ -18,7 +18,7 @@ module fp_divider (
   wire [31:0] b_inv;
   wire [ 4:0] recip_flags;
 
-  recip_fp recip (
+  fp_reciprocal recip (
       .in_bits(op_b),
       .out_bits(b_inv),
       .except_flags(recip_flags)
