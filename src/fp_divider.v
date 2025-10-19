@@ -34,15 +34,15 @@ module fp_reciprocal (
   parameter K = 10;
   parameter M_WIDTH = 1 + FRAC;
   parameter Y_WIDTH = M_WIDTH + 4;
-  
+
   // Extracción de campos
   wire            sign_in = in_bits[31];
   wire [ EXP-1:0] exp_in = in_bits[FRAC+EXP-1:FRAC];
   wire [FRAC-1:0] frac_in = in_bits[FRAC-1:0];
 
-  wire is_exp_all_zero = (exp_in == 0);
-  wire is_exp_all_one = (exp_in == {EXP{1'b1}});
-  wire is_frac_zero = (frac_in == 0);
+  wire            is_exp_all_zero = (exp_in == 0);
+  wire            is_exp_all_one = (exp_in == {EXP{1'b1}});
+  wire            is_frac_zero = (frac_in == 0);
 
   localparam [Y_WIDTH-1:0] ONE_FIXED = (32'd1 << FRAC);
   localparam [Y_WIDTH-1:0] TWO_FIXED = (32'd2 << FRAC);
@@ -165,7 +165,7 @@ module fp_reciprocal (
         out_frac = 0;
         except_flags[`F_UNDERFLOW] = 1'b1;
       end else begin
-        out_exp  = exp_out_i[EXP-1:0];
+        out_exp = exp_out_i[EXP-1:0];
         out_frac = y_norm[FRAC-1:0];
         except_flags[`F_INEXACT] = 1'b1;
       end
