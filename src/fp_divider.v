@@ -49,19 +49,20 @@ module fp_reciprocal (
 
   // Señales internas
   reg [M_WIDTH-1:0] m_int, tmp;
-  reg [Y_WIDTH-1:0] y0, y1, y2, y_norm;
+  reg [Y_WIDTH-1:0] y0, y1, y2;
   reg [2*Y_WIDTH-1:0] prod_my, prod_ycorr;
   reg [Y_WIDTH-1:0] correction, prod_my_shr;
   reg [EXP-1:0] out_exp;
   reg [FRAC-1:0] out_frac;
   reg out_sign;
   reg special_out_done;
-  integer exp_unbiased, exp_out_i, adj, shift_count, i;
+  reg adj;
+  integer exp_unbiased, exp_out_i, shift_count, i;
 
   // LUT x0
   wire [K-1:0] x0_index;
   wire [NSIG+1:0] x0_lut_out;
-  assign x0_index = m_int[M_WIDTH-2-:K];
+  assign x0_index = m_int[M_WIDTH-2:M_WIDTH-1-K];
 
   x0 x0_inst (
       .in (x0_index),
@@ -137,24 +138,14 @@ module fp_reciprocal (
       prod_ycorr = y1 * correction;
       y2 = prod_ycorr >> FRAC;
 
-      // Normalización de salida
-      y_norm = y2;
       adj = 0;
-
-      for (i = 0; i < Y_WIDTH; i = i + 1) begin
-        if (y_norm >= TWO_FIXED) begin
-          y_norm = y_norm >> 1;
-          adj = adj + 1;
-        end else if (y_norm < ONE_FIXED && y_norm != 0) begin
-          y_norm = y_norm << 1;
-          adj = adj - 1;
-        end else begin
-          i = Y_WIDTH;
-        end
+      if (y2 < ONE_FIXED) begin
+        y2 = y2 << 1;
+        adj = 1;
       end
 
       // Exponente de salida
-      exp_out_i = -exp_unbiased + BIAS + adj;
+      exp_out_i = BIAS - exp_unbiased - adj;
 
       if (exp_out_i >= ((1 << EXP) - 1)) begin
         out_exp = {EXP{1'b1}};
@@ -166,7 +157,7 @@ module fp_reciprocal (
         except_flags[`F_UNDERFLOW] = 1'b1;
       end else begin
         out_exp = exp_out_i[EXP-1:0];
-        out_frac = y_norm[FRAC-1:0];
+        out_frac = y2[FRAC-1:0];
         except_flags[`F_INEXACT] = 1'b1;
       end
 
