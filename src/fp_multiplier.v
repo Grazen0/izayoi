@@ -76,6 +76,9 @@ module mul_exception (
     output reg [4:0] spec_flags,
     output reg spec_override,
 
+    input  wire mode_fp_in,
+    output reg  mode_fp_out,
+
     input wire sign_a_in,
     input wire sign_b_in,
     input wire [7:0] exp_a_in,
@@ -94,6 +97,7 @@ module mul_exception (
   wire final_sign = sign_a_in ^ sign_b_in;
   assign ready_out = !valid_out || ready_in;
 
+  reg mode_fp_out_next;
   reg sign_a_out_next, sign_b_out_next;
   reg [7:0] exp_a_out_next, exp_b_out_next;
   reg [22:0] mant_a_out_next, mant_b_out_next;
@@ -102,6 +106,7 @@ module mul_exception (
   reg spec_override_next;
 
   always @(*) begin
+    mode_fp_out_next   = mode_fp_out;
     sign_a_out_next    = sign_a_out;
     sign_b_out_next    = sign_b_out;
     exp_a_out_next     = exp_a_out;
@@ -114,6 +119,7 @@ module mul_exception (
     spec_override_next = spec_override;
 
     if (valid_in && ready_out) begin
+      mode_fp_out_next   = mode_fp_in;
       sign_a_out_next    = sign_a_in;
       sign_b_out_next    = sign_b_in;
       exp_a_out_next     = exp_a_in;
@@ -149,6 +155,7 @@ module mul_exception (
       spec_result   <= 32'b0;
       spec_flags    <= 5'b0;
       spec_override <= 1'b0;
+      mode_fp_out   <= 1'b0;
       sign_a_out    <= 1'b0;
       sign_b_out    <= 1'b0;
       exp_a_out     <= 8'b0;
@@ -161,6 +168,7 @@ module mul_exception (
       end else if (valid_in && ready_out) begin
         valid_out <= 1'b1;
       end
+      mode_fp_out   <= mode_fp_out_next;
       sign_a_out    <= sign_a_out_next;
       sign_b_out    <= sign_b_out_next;
       exp_a_out     <= exp_a_out_next;
@@ -195,6 +203,9 @@ module mul_prod (
     output reg [8:0] exp_sum,
     output reg [47:0] mant_prod,
 
+    input  wire mode_fp_in,
+    output reg  mode_fp_out,
+
     input wire spec_override_in,
     input wire [31:0] spec_result_in,
     input wire [4:0] spec_flags_in,
@@ -207,6 +218,8 @@ module mul_prod (
   assign ready_out = !valid_out || ready_in;
   wire [23:0] mant_a_full = (exp_a == 0) ? {1'b0, mant_a} : {1'b1, mant_a};
   wire [23:0] mant_b_full = (exp_b == 0) ? {1'b0, mant_b} : {1'b1, mant_b};
+
+  reg mode_fp_out_next;
 
   reg final_sign_next;
   reg [8:0] exp_sum_next;
@@ -221,6 +234,7 @@ module mul_prod (
     exp_sum_next           = exp_sum;
     mant_prod_next         = mant_prod;
 
+    mode_fp_out_next       = mode_fp_out;
     spec_override_out_next = spec_override_out;
     spec_result_out_next   = spec_result_out;
     spec_flags_out_next    = spec_flags_out;
@@ -230,6 +244,7 @@ module mul_prod (
       exp_sum_next           = {1'b0, exp_a} + {1'b0, exp_b} - 9'd127;
       mant_prod_next         = mant_a_full * mant_b_full;
 
+      mode_fp_out_next       = mode_fp_in;
       spec_override_out_next = spec_override_in;
       spec_result_out_next   = spec_result_in;
       spec_flags_out_next    = spec_flags_in;
@@ -242,6 +257,7 @@ module mul_prod (
       final_sign        <= 1'b0;
       exp_sum           <= 9'b0;
       mant_prod         <= 48'b0;
+      mode_fp_out       <= 1'b0;
       spec_override_out <= 1'b0;
       spec_result_out   <= 32'b0;
       spec_flags_out    <= 5'b0;
@@ -254,6 +270,7 @@ module mul_prod (
       final_sign        <= final_sign_next;
       exp_sum           <= exp_sum_next;
       mant_prod         <= mant_prod_next;
+      mode_fp_out       <= mode_fp_out_next;
       spec_override_out <= spec_override_out_next;
       spec_result_out   <= spec_result_out_next;
       spec_flags_out    <= spec_flags_out_next;
@@ -277,6 +294,9 @@ module mul_norm (
     output reg [ 8:0] exp_norm,
     output reg [47:0] mant_norm,
 
+    input  wire mode_fp_in,
+    output reg  mode_fp_out,
+
     input  wire final_sign_in,
     output reg  final_sign_out,
 
@@ -295,6 +315,8 @@ module mul_norm (
   reg [ 8:0] exp_norm_next;
   reg [47:0] mant_norm_next;
 
+  reg        mode_fp_out_next;
+
   reg        spec_override_out_next;
   reg [31:0] spec_result_out_next;
   reg [ 4:0] spec_flags_out_next;
@@ -303,6 +325,7 @@ module mul_norm (
     exp_norm_next          = exp_norm;
     mant_norm_next         = mant_norm;
 
+    mode_fp_out_next       = mode_fp_out;
     final_sign_out_next    = final_sign_out;
     spec_override_out_next = spec_override_out;
     spec_result_out_next   = spec_result_out;
@@ -313,6 +336,7 @@ module mul_norm (
       exp_norm_next          = mant_prod[47] ? exp_sum + 9'd1 : exp_sum;
       mant_norm_next         = mant_prod[47] ? (mant_prod >> 1) : mant_prod;
 
+      mode_fp_out_next       = mode_fp_in;
       final_sign_out_next    = final_sign_in;
       spec_override_out_next = spec_override_in;
       spec_result_out_next   = spec_result_in;
@@ -325,6 +349,7 @@ module mul_norm (
       valid_out         <= 1'b0;
       exp_norm          <= 8'b0;
       mant_norm         <= 48'b0;
+      mode_fp_out       <= 1'b0;
       spec_override_out <= 1'b0;
       spec_result_out   <= 32'b0;
       spec_flags_out    <= 5'b0;
@@ -337,6 +362,7 @@ module mul_norm (
       exp_norm          <= exp_norm_next;
       mant_norm         <= mant_norm_next;
 
+      mode_fp_out       <= mode_fp_out_next;
       final_sign_out    <= final_sign_out_next;
       spec_override_out <= spec_override_out_next;
       spec_result_out   <= spec_result_out_next;
@@ -361,6 +387,9 @@ module mul_round (
     output reg [ 7:0] final_exp,
     output reg [22:0] final_mant,
 
+    input  wire mode_fp_in,
+    output reg  mode_fp_out,
+
     input  wire final_sign_in,
     output reg  final_sign_out,
 
@@ -376,6 +405,7 @@ module mul_round (
 
   reg  [ 7:0] final_exp_next;
   reg  [22:0] final_mant_next;
+  reg         mode_fp_out_next;
   reg         final_sign_out_next;
   reg         spec_override_out_next;
   reg  [31:0] spec_result_out_next;
@@ -398,18 +428,20 @@ module mul_round (
   always @(*) begin
     final_exp_next         = final_exp;
     final_mant_next        = final_mant;
+    mode_fp_out_next       = mode_fp_out;
     final_sign_out_next    = final_sign_out;
     spec_override_out_next = spec_override_out;
     spec_result_out_next   = spec_result_out;
     spec_flags_out_next    = spec_flags_out;
 
     if (valid_in && ready_out) begin
-      final_exp_next = overflow ? 8'hFF : exp_post[7:0];
-      final_mant_next = overflow ? 23'h0 : mant_post;
-      final_sign_out_next = final_sign_in;
+      final_exp_next         = overflow ? 8'hFF : exp_post[7:0];
+      final_mant_next        = overflow ? 23'h0 : mant_post;
+      mode_fp_out_next       = mode_fp_in;
+      final_sign_out_next    = final_sign_in;
       spec_override_out_next = spec_override_in;
-      spec_result_out_next = spec_result_in;
-      spec_flags_out_next = spec_flags_in;
+      spec_result_out_next   = spec_result_in;
+      spec_flags_out_next    = spec_flags_in;
 
       if (overflow) spec_flags_out_next[`F_OVERFLOW] = 1'b1;
       if (underflow) spec_flags_out_next[`F_UNDERFLOW] = 1'b1;
@@ -422,6 +454,7 @@ module mul_round (
       valid_out         <= 1'b0;
       final_exp         <= 8'b0;
       final_mant        <= 23'b0;
+      mode_fp_out       <= 1'b0;
       final_sign_out    <= 1'b0;
       spec_override_out <= 1'b0;
       spec_result_out   <= 32'b0;
@@ -434,6 +467,7 @@ module mul_round (
       end
       final_exp         <= final_exp_next;
       final_mant        <= final_mant_next;
+      mode_fp_out       <= mode_fp_out_next;
       final_sign_out    <= final_sign_out_next;
       spec_override_out <= spec_override_out_next;
       spec_result_out   <= spec_result_out_next;
@@ -460,6 +494,9 @@ module mul_pack (
     input wire [31:0] spec_result,
     input wire [4:0] spec_flags,
 
+    input  wire mode_fp_in,
+    output wire mode_fp_out,
+
     output reg [31:0] result,
     output reg [ 4:0] flags
 );
@@ -468,6 +505,8 @@ module mul_pack (
 
   wire [31:0] result_next;
   wire [ 4:0] flags_next;
+
+  assign mode_fp_out = mode_fp_in;
 
   assign result_next = spec_override ? spec_result : final_result;
   assign flags_next  = spec_flags;
@@ -509,7 +548,8 @@ module fp_multiplier (
     input wire [4:0] initial_flags,
 
     output wire [31:0] result,
-    output wire [ 4:0] flags
+    output wire [4:0] flags,
+    output wire mode_fp_out
 );
 
   //s0
@@ -544,6 +584,8 @@ module fp_multiplier (
   wire [4:0] spec_flags;
   wire spec_override;
 
+  wire mode_fp_s1;
+
   wire sign_a_s1;
   wire sign_b_s1;
   wire [7:0] exp_a_s1, exp_b_s1;
@@ -570,6 +612,9 @@ module fp_multiplier (
       .spec_flags   (spec_flags),
       .spec_override(spec_override),
 
+      .mode_fp_in (mode_fp),
+      .mode_fp_out(mode_fp_s1),
+
       .sign_a_in(sign_a),
       .sign_b_in(sign_b),
       .exp_a_in (exp_a),
@@ -590,6 +635,8 @@ module fp_multiplier (
   wire final_sign;
   wire [8:0] exp_sum;
   wire [47:0] mant_prod;
+
+  wire mode_fp_s2;
 
   wire spec_override_s2;
   wire [31:0] spec_result_s2;
@@ -614,6 +661,9 @@ module fp_multiplier (
       .exp_sum   (exp_sum),
       .mant_prod (mant_prod),
 
+      .mode_fp_in (mode_fp_s1),
+      .mode_fp_out(mode_fp_s2),
+
       .spec_override_in(spec_override),
       .spec_result_in  (spec_result),
       .spec_flags_in   (spec_flags),
@@ -627,6 +677,8 @@ module fp_multiplier (
   wire s3_valid, s3_ready;
   wire [8:0] exp_norm;
   wire [47:0] mant_norm;
+
+  wire mode_fp_s3;
 
   wire final_sign_s3;
   wire spec_override_s3;
@@ -646,6 +698,9 @@ module fp_multiplier (
       .exp_norm (exp_norm),
       .mant_norm(mant_norm),
 
+      .mode_fp_in (mode_fp_s2),
+      .mode_fp_out(mode_fp_s5),
+
       .final_sign_in (final_sign),
       .final_sign_out(final_sign_s3),
 
@@ -662,6 +717,8 @@ module fp_multiplier (
   wire s4_valid, s4_ready;
   wire [7:0] final_exp;
   wire [22:0] final_mant;
+
+  wire mode_fp_s4;
 
   wire final_sign_s4;
   wire spec_override_s4;
@@ -680,6 +737,9 @@ module fp_multiplier (
       .mant_norm (mant_norm),
       .final_exp (final_exp),
       .final_mant(final_mant),
+
+      .mode_fp_in (mode_fp_s3),
+      .mode_fp_out(mode_fp_s4),
 
       .final_sign_in (final_sign_s3),
       .final_sign_out(final_sign_s4),
@@ -711,6 +771,9 @@ module fp_multiplier (
       .spec_override(spec_override_s4),
       .spec_result(spec_result_s4),
       .spec_flags(spec_flags_s4),
+
+      .mode_fp_in (mode_fp_s4),
+      .mode_fp_out(mode_fp_out),
 
       .result(result),
       .flags (flags)
