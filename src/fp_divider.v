@@ -19,32 +19,30 @@ module x0 #(
   assign out = (in == 0) ? {1'b1, seven, {(NSIG - 6) {1'b0}}} : {2'b01, seven, {(NSIG - 7) {1'b0}}};
 endmodule
 
-module fp_reciprocal #(
-    parameter TYPE = 32
-) (
-    input  wire [TYPE-1:0] in_bits,
-    output reg  [TYPE-1:0] out_bits,
-    output reg  [     4:0] except_flags
+module fp_reciprocal (
+    input  wire [31:0] in_bits,
+    output reg  [31:0] out_bits,
+    output reg  [ 4:0] except_flags
 );
   // Bit format
-  parameter EXP = (TYPE == 16) ? 5 : 8;
-  parameter FRAC = (TYPE == 16) ? 10 : 23;
-  parameter BIAS = (TYPE == 16) ? 15 : 127;
-  parameter NSIG = 11;
+  parameter EXP = 8;
+  parameter FRAC = 23;
+  parameter BIAS = 127;
 
+  // Anchos internos
+  parameter NSIG = 11;
+  parameter K = 10;
+  parameter M_WIDTH = 1 + FRAC;
+  parameter Y_WIDTH = M_WIDTH + 4;
+  
   // Extracción de campos
-  wire            sign_in = in_bits[TYPE-1];
+  wire            sign_in = in_bits[31];
   wire [ EXP-1:0] exp_in = in_bits[FRAC+EXP-1:FRAC];
   wire [FRAC-1:0] frac_in = in_bits[FRAC-1:0];
 
   wire            is_exp_all_zero = (exp_in == 0);
   wire            is_exp_all_one = (exp_in == {EXP{1'b1}});
   wire            is_frac_zero = (frac_in == 0);
-
-  // Anchos internos
-  parameter M_WIDTH = 1 + FRAC;
-  parameter Y_WIDTH = M_WIDTH + 4;
-  parameter K = 10;
 
   localparam [Y_WIDTH-1:0] ONE_FIXED = (32'd1 << FRAC);
   localparam [Y_WIDTH-1:0] TWO_FIXED = (32'd2 << FRAC);
@@ -70,7 +68,7 @@ module fp_reciprocal #(
       .out(x0_lut_out)
   );
 
-  wire [Y_WIDTH-1:0] x0_out_aligned = (TYPE == 16) ? (x0_lut_out >> 2) : (x0_lut_out << 11);
+  wire [Y_WIDTH-1:0] x0_out_aligned = x0_lut_out << 11;
 
   // Lógica principal
   always @(*) begin
@@ -169,7 +167,7 @@ module fp_reciprocal #(
       end else begin
         out_exp  = exp_out_i[EXP-1:0];
         out_frac = y_norm[FRAC-1:0];
-        // except_flags[`F_INEXACT] = 1'b1;
+        except_flags[`F_INEXACT] = 1'b1;
       end
 
       out_bits = {out_sign, out_exp, out_frac};
