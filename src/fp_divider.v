@@ -49,7 +49,7 @@ module fp_reciprocal (
 
   // Señales internas
   reg [M_WIDTH-1:0] m_int, tmp;
-  reg [Y_WIDTH-1:0] y0, y1, y2;
+  reg [Y_WIDTH-1:0] y0, y1, y2, y_norm;
   reg [2*Y_WIDTH-1:0] prod_my, prod_ycorr;
   reg [Y_WIDTH-1:0] correction, prod_my_shr;
   reg [EXP-1:0] out_exp;
@@ -80,6 +80,7 @@ module fp_reciprocal (
     out_sign = sign_in;
     out_exp = 0;
     out_frac = 0;
+    adj = 0;
 
     // --- Casos especiales: Inf / NaN / 0 ---
     if (is_exp_all_one) begin
@@ -137,10 +138,10 @@ module fp_reciprocal (
       correction = TWO_FIXED - prod_my_shr;
       prod_ycorr = y1 * correction;
       y2 = prod_ycorr >> FRAC;
-
-      adj = 0;
-      if (y2 < ONE_FIXED) begin
-        y2 = y2 << 1;
+      
+      y_norm = y2;
+      if (y_norm < ONE_FIXED) begin
+        y_norm = y_norm << 1;
         adj = 1;
       end
 
@@ -157,7 +158,7 @@ module fp_reciprocal (
         except_flags[`F_UNDERFLOW] = 1'b1;
       end else begin
         out_exp = exp_out_i[EXP-1:0];
-        out_frac = y2[FRAC-1:0];
+        out_frac = y_norm[FRAC-1:0];
         except_flags[`F_INEXACT] = 1'b1;
       end
 
