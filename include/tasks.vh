@@ -28,3 +28,22 @@ task test(input reg [2:0] op, input reg [31:0] a, input reg [31:0] b, input reg 
     end
   end
 endtask
+
+task send(input reg [2:0] op, input reg [31:0] a, input reg [31:0] b);
+  begin
+    op_a = a;
+    op_b = b;
+    op_code = op;
+
+    start = 1'b1;
+    @(posedge clk);
+    #1 start = 1'b0;
+
+    while (!ready_out) begin
+      @(posedge clk);
+      #1;
+    end
+
+    #1;
+  end
+endtask
