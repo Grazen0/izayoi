@@ -63,13 +63,17 @@ module sub_single_tb ();
     test(`OP_SUB, 32'h40A8_0000, 32'h4194_0000, 32'hC154_0000);  // 5.25 - 18.5 = -13.25
     test(`OP_SUB, 32'h4229_3333, 32'hC188_28F6, 32'h426D_47AE);  // 42.3 - (-17.02) = 59.32
     test(`OP_SUB, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'hBDCC_CCCD);  // 0.1 - 0.2 = -0.1
+
     round_mode = 1'b1;  // round to zero
+
     test(`OP_SUB, 32'hFF69_999A, 32'h7F69_999A, `NEG_INF);  // -3.1e38 - 3.1e38 = -Inf
     test(`OP_SUB, 32'h7F69_999A, 32'h0E69_999A, 32'h7F69_999A);  // 3.1e38 - (-2.87e-30) = 3.1e38
     test(`OP_SUB, 32'h0000_0040, 32'h0000_0003, 32'h0000_003D);  // 9e-44 - 4e-45 = 8.5e-44
     test(`OP_SUB, 32'h4049_0FDB, 32'h402D_F854, 32'h3ED8_BC38);  // pi - e = ~0.423
 
     // Special cases
+    test(`OP_SUB, `ZERO, `ZERO, `ZERO);  // 0.0 - 0.0 = 0.0
+    test(`OP_SUB, `ZERO, `NEG_ZERO, `ZERO);  // 0.0 - (-0.0) = 0.0
     test(`OP_SUB, `INF, 32'h4010_0000, `INF);  // Inf - 2.25 = Inf
     test(`OP_SUB, `NEG_INF, 32'h4010_0000, `NEG_INF);  // -Inf - 2.25 = -Inf
     test(`OP_SUB, `NEG_INF, `NEG_INF, `NAN);  // -Inf - (-Inf) = NaN
