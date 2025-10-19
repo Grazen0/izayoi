@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module float_alu_tb ();
   reg clk, rst_n, start;
   reg [31:0] op_a, op_b;
