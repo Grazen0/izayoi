@@ -22,25 +22,14 @@ module mul_decode (
     output wire is_inf_b
 );
   always @(*) begin
-    if (mode_fp == `FP_HALF) begin
-      sign_a = op_a[15];
-      sign_b = op_b[15];
+    sign_a = op_a[31];
+    sign_b = op_b[31];
 
-      exp_a  = {3'b0, op_a[14:10]} + 8'd112;
-      exp_b  = {3'b0, op_b[14:10]} + 8'd112;
+    exp_a  = op_a[30:23];
+    exp_b  = op_b[30:23];
 
-      mant_a = {op_a[9:0], 13'b0};
-      mant_b = {op_b[9:0], 13'b0};
-    end else begin
-      sign_a = op_a[31];
-      sign_b = op_b[31];
-
-      exp_a  = op_a[30:23];
-      exp_b  = op_b[30:23];
-
-      mant_a = op_a[22:0];
-      mant_b = op_b[22:0];
-    end
+    mant_a = op_a[22:0];
+    mant_b = op_b[22:0];
   end
 
   assign is_zero_a = (exp_a == 8'b0) && (mant_a == 23'b0);
@@ -477,60 +466,6 @@ module mul_round (
 
 endmodule
 
-module mul_pack (
-    input wire clk,
-    input wire rst_n,
-
-    input  wire valid_in,
-    input  wire ready_in,
-    output reg  valid_out,
-    output wire ready_out,
-
-    input wire final_sign,
-    input wire [7:0] final_exp,
-    input wire [22:0] final_mant,
-
-    input wire spec_override,
-    input wire [31:0] spec_result,
-    input wire [4:0] spec_flags,
-
-    input  wire mode_fp_in,
-    output wire mode_fp_out,
-
-    output reg [31:0] result,
-    output reg [ 4:0] flags
-);
-
-  wire [31:0] final_result = {final_sign, final_exp, final_mant};
-
-  wire [31:0] result_next;
-  wire [ 4:0] flags_next;
-
-  assign mode_fp_out = mode_fp_in;
-
-  assign result_next = spec_override ? spec_result : final_result;
-  assign flags_next  = spec_flags;
-
-  assign ready_out   = !valid_out || ready_in;
-
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      valid_out <= 1'b0;
-      result    <= 32'b0;
-      flags     <= 5'b0;
-    end else begin
-      if (valid_out && ready_in) begin
-        valid_out <= 1'b0;
-      end else if (valid_in && ready_out) begin
-        valid_out <= 1'b1;
-        result    <= result_next;
-        flags     <= flags_next;
-      end
-    end
-  end
-
-endmodule
-
 module fp_multiplier (
     input wire clk,
     input wire rst_n,
@@ -547,7 +482,9 @@ module fp_multiplier (
 
     input wire [4:0] initial_flags,
 
-    output wire [31:0] result,
+    output wire sign_out,
+    output wire [7:0] exp_out,
+    output wire [26:0] mant_out,
     output wire [4:0] flags,
     output wire mode_fp_out
 );
@@ -699,7 +636,7 @@ module fp_multiplier (
       .mant_norm(mant_norm),
 
       .mode_fp_in (mode_fp_s2),
-      .mode_fp_out(mode_fp_s5),
+      .mode_fp_out(mode_fp_s3),
 
       .final_sign_in (final_sign),
       .final_sign_out(final_sign_s3),
@@ -729,7 +666,7 @@ module fp_multiplier (
       .clk      (clk),
       .rst_n    (rst_n),
       .valid_in (s3_valid),
-      .ready_in (s5_ready),
+      .ready_in (ready_in),
       .valid_out(s4_valid),
       .ready_out(s4_ready),
 
@@ -753,31 +690,14 @@ module fp_multiplier (
       .spec_flags_out   (spec_flags_s4)
   );
 
-  //s5
-  wire s5_ready;
-
-  mul_pack s5 (
-      .clk(clk),
-      .rst_n(rst_n),
-      .valid_in(s4_valid),
-      .ready_in(ready_in),
-      .valid_out(valid_out),
-      .ready_out(s5_ready),
-
-      .final_sign(final_sign_s4),
-      .final_exp (final_exp),
-      .final_mant(final_mant),
-
-      .spec_override(spec_override_s4),
-      .spec_result(spec_result_s4),
-      .spec_flags(spec_flags_s4),
-
-      .mode_fp_in (mode_fp_s4),
-      .mode_fp_out(mode_fp_out),
-
-      .result(result),
-      .flags (flags)
-  );
+  assign valid_out = s4_valid;
+  assign sign_out = spec_override_s4 ? spec_result_s4[31] : final_sign_s4;
+  assign exp_out = spec_override_s4 ? spec_result_s4[30:23] : final_exp;
+  assign mant_out = {
+    1'b1, spec_override_s4 ? spec_result_s4[22:0] : final_mant, 3'b000
+  };  // TODO: check here
+  assign flags = spec_flags_s4;
+  assign mode_fp_out = mode_fp_s4;
 
   assign ready_out = s1_ready;
 endmodule

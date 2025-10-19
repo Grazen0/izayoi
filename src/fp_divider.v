@@ -192,8 +192,11 @@ module fp_divider (
     output wire valid_out,
     output wire ready_out,
 
-    output wire [31:0] result,
-    output wire [ 4:0] flags
+    output wire sign_out,
+    output wire [7:0] exp_out,
+    output wire [26:0] mant_out,
+    output wire [4:0] flags,
+    output wire mode_fp_out
 );
   wire [31:0] b_inv;
   wire [ 4:0] recip_flags;
@@ -219,7 +222,10 @@ module fp_divider (
       .valid_out(valid_out),
       .ready_out(ready_out),
 
-      .result(result),
-      .flags (flags)
+      .sign_out(sign_out),
+      .exp_out(exp_out),
+      .mant_out(mant_out),
+      .flags(flags),
+      .mode_fp_out(mode_fp_out)
   );
 endmodule

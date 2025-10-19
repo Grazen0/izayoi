@@ -501,97 +501,6 @@ module fp_round #(
   end
 endmodule
 
-module fp_unpacker #(
-    parameter P_SINGLE = 23,
-    parameter E_SINGLE = 8,
-    parameter N_SINGLE = P_SINGLE + E_SINGLE + 1,
-    parameter P_HALF   = 10,
-    parameter E_HALF   = 5,
-    parameter N_HALF   = P_HALF + E_HALF + 1
-) (
-    input wire [N_SINGLE-1:0] op_a,
-    input wire [N_SINGLE-1:0] op_b,
-    input wire mode_fp,
-
-    output wire sign_a,
-    output wire sign_b,
-    output wire [E_SINGLE-1:0] exp_a,
-    output wire [E_SINGLE-1:0] exp_b,
-    output wire [P_SINGLE-1:0] mant_a,
-    output wire [P_SINGLE-1:0] mant_b
-);
-  localparam BIAS_HALF = 2 ** (E_HALF - 1) - 1;
-  localparam BIAS_SINGLE = 2 ** (E_SINGLE - 1) - 1;
-
-  wire fp_single = (mode_fp == `FP_SINGLE);
-
-  wire sign_a_half = op_a[N_HALF-1];
-  wire sign_b_half = op_b[N_HALF-1];
-  wire sign_a_single = op_a[N_SINGLE-1];
-  wire sign_b_single = op_b[N_SINGLE-1];
-
-  wire [E_HALF-1:0] exp_a_half = op_a[N_HALF-2:P_HALF];
-  wire [E_HALF-1:0] exp_b_half = op_b[N_HALF-2:P_HALF];
-  wire [E_SINGLE-1:0] exp_a_single = op_a[N_SINGLE-2:P_SINGLE];
-  wire [E_SINGLE-1:0] exp_b_single = op_b[N_SINGLE-2:P_SINGLE];
-
-  wire [P_HALF-1:0] mant_a_half = op_a[P_HALF-1:0];
-  wire [P_HALF-1:0] mant_b_half = op_b[P_HALF-1:0];
-  wire [P_SINGLE-1:0] mant_a_single = op_a[P_SINGLE-1:0];
-  wire [P_SINGLE-1:0] mant_b_single = op_b[P_SINGLE-1:0];
-
-  assign sign_a = fp_single ? sign_a_single : sign_a_half;
-  assign sign_b = fp_single ? sign_b_single : sign_b_half;
-
-  assign exp_a  = fp_single
-    ? exp_a_single
-    : (exp_a_half == 0 ? 0 : (exp_a_half - BIAS_HALF + BIAS_SINGLE));
-  assign exp_b  = fp_single
-    ? exp_b_single
-    : (exp_b_half == 0 ? 0 : (exp_b_half - BIAS_HALF + BIAS_SINGLE));
-
-  assign mant_a = fp_single ? mant_a_single : (mant_a_half << 13);
-  assign mant_b = fp_single ? mant_b_single : (mant_b_half << 13);
-endmodule
-
-module fp_packer #(
-    parameter P_SINGLE = 23,
-    parameter E_SINGLE = 8,
-    parameter N_SINGLE = P_SINGLE + E_SINGLE + 1,
-    parameter P_HALF   = 10,
-    parameter E_HALF   = 5,
-    parameter N_HALF   = P_HALF + E_HALF + 1
-) (
-    input wire sign,
-    input wire [E_SINGLE-1:0] exp,
-    input wire [P_SINGLE+3:0] mant,
-    input wire [4:0] flags_in,
-    input wire mode_fp,
-
-    output reg [N_SINGLE-1:0] result,
-    output reg [4:0] flags_out
-);
-  localparam BIAS_HALF = 2 ** (E_HALF - 1) - 1;
-  localparam BIAS_SINGLE = 2 ** (E_SINGLE - 1) - 1;
-
-  wire [E_HALF-1:0] exp_half = exp - BIAS_SINGLE + BIAS_HALF;
-  wire [P_HALF-1:0] mant_half = mant[P_SINGLE+2-:P_HALF] + mant[P_SINGLE-P_HALF+2];  // round to nearest
-
-  always @(*) begin
-    flags_out = flags_in;
-
-    if (mode_fp == `FP_SINGLE) begin
-      result = {sign, exp, mant[P_SINGLE+2:3]};
-    end else begin
-      result = {{(N_SINGLE - N_HALF) {1'b0}}, sign, exp_half, mant_half};
-
-      if (|mant[P_SINGLE-P_HALF-1:0]) begin
-        flags_out[`F_INEXACT] = 1'b1;
-      end
-    end
-  end
-endmodule
-
 module fp_adder #(
     parameter P = 23,
     parameter E = 8,
@@ -609,25 +518,20 @@ module fp_adder #(
 
     output wire valid_out,
     output wire ready_out,
-    output wire [N-1:0] result,
-    output wire [4:0] flags
+    output wire sign_out,
+    output wire [E-1:0] exp_out,
+    output wire [P+3:0] mant_out,
+    output wire [4:0] flags,
+    output wire mode_fp_out
 );
-  wire sign_a, sign_b;
-  wire [E-1:0] exp_a, exp_b;
-  wire [P-1:0] mant_a, mant_b;
+  wire sign_a = op_a[N-1];
+  wire sign_b = op_b[N-1];
 
-  fp_unpacker unpacker (
-      .op_a(op_a),
-      .op_b(op_b),
-      .mode_fp(mode_fp),
+  wire [E-1:0] exp_a = op_a[N-2:P];
+  wire [E-1:0] exp_b = op_b[N-2:P];
 
-      .sign_a(sign_a),
-      .sign_b(sign_b),
-      .exp_a (exp_a),
-      .exp_b (exp_b),
-      .mant_a(mant_a),
-      .mant_b(mant_b)
-  );
+  wire [P-1:0] mant_a = op_a[P-1:0];
+  wire [P-1:0] mant_b = op_b[P-1:0];
 
   wire sign_b_corrected = sign_b ^ sub;
 
@@ -805,14 +709,9 @@ module fp_adder #(
 
   assign valid_out = renormalize_valid;
 
-  fp_packer packer (
-      .sign(sign_renormalized),
-      .exp(exp_renormalized),
-      .mant(mant_renormalized),
-      .flags_in(flags_renormalized),
-      .mode_fp(mode_fp_renormalized),
-
-      .result(result),
-      .flags_out(flags)
-  );
+  assign sign_out = sign_renormalized;
+  assign exp_out = exp_renormalized;
+  assign mant_out = mant_renormalized;
+  assign flags = flags_renormalized;
+  assign mode_fp_out = mode_fp_renormalized;
 endmodule
