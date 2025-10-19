@@ -40,9 +40,9 @@ module fp_reciprocal (
   wire [ EXP-1:0] exp_in = in_bits[FRAC+EXP-1:FRAC];
   wire [FRAC-1:0] frac_in = in_bits[FRAC-1:0];
 
-  wire            is_exp_all_zero = (exp_in == 0);
-  wire            is_exp_all_one = (exp_in == {EXP{1'b1}});
-  wire            is_frac_zero = (frac_in == 0);
+  wire is_exp_all_zero = (exp_in == 0);
+  wire is_exp_all_one = (exp_in == {EXP{1'b1}});
+  wire is_frac_zero = (frac_in == 0);
 
   localparam [Y_WIDTH-1:0] ONE_FIXED = (32'd1 << FRAC);
   localparam [Y_WIDTH-1:0] TWO_FIXED = (32'd2 << FRAC);
