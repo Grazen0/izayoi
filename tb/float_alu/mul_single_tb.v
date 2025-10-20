@@ -65,12 +65,14 @@ module mul_single_tb ();
     test(`OP_MUL, 32'h40A8_0000, 32'h4194_0000, 32'h42C2_4000);  // 5.25 * 18.5 = 97.125
     test(`OP_MUL, 32'h4229_3333, 32'hC188_28F6, 32'hC433_FC8B);  // 42.3 * (-17.02) = -719.946
     test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.02 (inexact)
+    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.3 (inexact)
+    test(`OP_MUL, 32'h425A_CCCD, 32'h0E69_999A, 32'h1147_A7AF);  // 54.7 * 2.87e-30 = 1.5e-28
 
     round_mode = 1'b1;  // round to zero
 
-    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.3 (inexact)
+    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70A);  // 0.1 * 0.2 = ~0.3 (inexact)
+    test(`OP_MUL, 32'h425A_CCCD, 32'h0E69_999A, 32'h1147_A7AE);  // 54.7 * 2.87e-30 = 1.5e-28
     test(`OP_MUL, 32'h7F7F_FFFF, 32'h7F7F_FFFF, `INF);  // 3.4e38 * 3.4e38 = Inf (overflow)
-    test(`OP_MUL, 32'h425A_CCCD, 32'h0E69_999A, 32'h1147_A7AF);  // 54.7 * 2.87e-30 = 1.5e-28
     test(`OP_MUL, 32'h0000_0040, 32'h0000_0003,
          `ZERO);  // 9e-44 * 4e-45 = 3.6e-88 (underflow, inexact)
     test(`OP_MUL, 32'h4049_0FDB, 32'h402D_F854, 32'h4108_A2C0);  // pi * e = ~8.539 (inexact)
