@@ -18,7 +18,7 @@ module x0 #(
   assign out = (in == 0) ? {1'b1, seven, {(NSIG - 6) {1'b0}}} : {2'b01, seven, {(NSIG - 7) {1'b0}}};
 endmodule
 
-module fp_reciprocal (
+module fp_recip (
     input  wire [31:0] in_bits,
     output reg  [31:0] out_bits,
     output reg  [ 4:0] except_flags

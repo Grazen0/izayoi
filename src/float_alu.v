@@ -197,7 +197,7 @@ module float_alu #(
   wire [N-1:0] op_b_inv;
   wire [4:0] recip_flags;
 
-  fp_reciprocal recip (
+  fp_recip recip (
       .in_bits(op_b_unpacked),
       .out_bits(op_b_inv),
       .except_flags(recip_flags)
