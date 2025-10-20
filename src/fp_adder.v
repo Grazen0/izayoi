@@ -173,37 +173,37 @@ module fp_addsub #(
 
   always @(*) begin
     if (valid_in && ready_out) begin
-      exp_out_next = exp_in;
+      exp_out_next        = exp_in;
       round_mode_out_next = round_mode_in;
-      mode_fp_out_next = mode_fp_in;
-      flags_out_next = 5'b0;
+      mode_fp_out_next    = mode_fp_in;
+      flags_out_next      = 5'b0;
 
       if (is_a_nan || is_b_nan) begin
         // Result must be NaN
-        exp_out_next = 8'hFF;
-        sum_next = {2'b11, {(P + 2) {1'b0}}};
-        carry_out_next = 1'b0;
-        sign_out_next = 1'b0;
+        exp_out_next               = 8'hFF;
+        sum_next                   = {2'b11, {(P + 2) {1'b0}}};
+        carry_out_next             = 1'b0;
+        sign_out_next              = 1'b0;
         flags_out_next[`F_INVALID] = 1'b1;
       end else if (is_a_inf && is_b_inf && sign_a != sign_b) begin
         // Result must be NaN (again)
-        exp_out_next = 8'hFF;
-        sum_next = {2'b11, {(P + 2) {1'b0}}};
-        carry_out_next = 1'b0;
-        sign_out_next = 1'b0;
+        exp_out_next               = 8'hFF;
+        sum_next                   = {2'b11, {(P + 2) {1'b0}}};
+        carry_out_next             = 1'b0;
+        sign_out_next              = 1'b0;
         flags_out_next[`F_INVALID] = 1'b1;
       end else if (is_a_inf) begin
         // Result must be Inf (towards A)
-        exp_out_next = 8'hFF;
-        sum_next = {1'b1, {P{1'b0}}, 3'b000};
+        exp_out_next   = 8'hFF;
+        sum_next       = {1'b1, {P{1'b0}}, 3'b000};
         carry_out_next = 1'b0;
-        sign_out_next = sign_a;
+        sign_out_next  = sign_a;
       end else if (is_b_inf) begin
         // Result must be Inf (towards B)
-        exp_out_next = 8'hFF;
-        sum_next = {1'b1, {P{1'b0}}, 3'b000};
+        exp_out_next   = 8'hFF;
+        sum_next       = {1'b1, {P{1'b0}}, 3'b000};
         carry_out_next = 1'b0;
-        sign_out_next = sign_b;
+        sign_out_next  = sign_b;
       end else begin
         // Regular operations
         if (mant_a_aligned >= mant_b_aligned) begin
@@ -218,24 +218,24 @@ module fp_addsub #(
 
         if (sign_a == sign_b) begin
           {carry_out_next, sum_next} = mant_a_aligned + mant_b_aligned;
-          sign_out_next = sign_a;
+          sign_out_next              = sign_a;
         end else begin
-          sum_next = mant_big - mant_small;
+          sum_next       = mant_big - mant_small;
           carry_out_next = 1'b0;
-          sign_out_next = sign_big;
+          sign_out_next  = sign_big;
         end
       end
 
     end else begin
       // Keep current outputs
-      sum_next = sum;
-      carry_out_next = carry_out;
-      sign_out_next = sign_out;
-      flags_out_next = flags_out;
+      sum_next            = sum;
+      carry_out_next      = carry_out;
+      sign_out_next       = sign_out;
+      flags_out_next      = flags_out;
 
-      exp_out_next = exp_out;
+      exp_out_next        = exp_out;
       round_mode_out_next = round_mode_out;
-      mode_fp_out_next = mode_fp_out;
+      mode_fp_out_next    = mode_fp_out;
     end
   end
 
@@ -308,11 +308,11 @@ module fp_normalize #(
   always @(*) begin
     if (valid_in && ready_out) begin
       // Use stage inputs
-      flags_next = flags_in;
+      flags_next          = flags_in;
 
-      sign_out_next = sign_in;
+      sign_out_next       = sign_in;
       round_mode_out_next = round_mode_in;
-      mode_fp_out_next = mode_fp_in;
+      mode_fp_out_next    = mode_fp_in;
 
       if (carry) begin
         if (exp_in != 8'hFF) begin
@@ -328,7 +328,7 @@ module fp_normalize #(
 
         if (exp_next == 8'hFF) begin
           // Got infinity
-          mant_next = {(P + 4) {1'b0}};
+          mant_next               = {(P + 4) {1'b0}};
           flags_next[`F_OVERFLOW] = 1'b1;
         end
       end else begin
@@ -369,27 +369,27 @@ module fp_normalize #(
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      mant_out <= {(P + 4) {1'b0}};
-      exp_out <= 8'b0;
-      flags_out <= 5'b0;
+      mant_out       <= {(P + 4) {1'b0}};
+      exp_out        <= 8'b0;
+      flags_out      <= 5'b0;
 
-      valid_out <= 1'b0;
-      busy <= 1'b0;
+      valid_out      <= 1'b0;
+      busy           <= 1'b0;
 
-      sign_out <= 1'b0;
+      sign_out       <= 1'b0;
       round_mode_out <= 1'b0;
-      mode_fp_out <= 1'b0;
+      mode_fp_out    <= 1'b0;
     end else begin
-      mant_out <= mant_next;
-      exp_out <= exp_next;
-      flags_out <= flags_next;
+      mant_out       <= mant_next;
+      exp_out        <= exp_next;
+      flags_out      <= flags_next;
 
-      valid_out <= valid_out_next;
-      busy <= busy_next;
+      valid_out      <= valid_out_next;
+      busy           <= busy_next;
 
-      sign_out <= sign_out_next;
+      sign_out       <= sign_out_next;
       round_mode_out <= round_mode_out_next;
-      mode_fp_out <= mode_fp_out_next;
+      mode_fp_out    <= mode_fp_out_next;
     end
   end
 endmodule
@@ -442,15 +442,15 @@ module fp_round #(
   always @(*) begin
     if (valid_in && ready_out) begin
       // Use stage inputs
-      flags_out_next = flags_in;
+      flags_out_next   = flags_in;
 
-      exp_out_next = exp_in;
-      sign_out_next = sign_in;
+      exp_out_next     = exp_in;
+      sign_out_next    = sign_in;
       mode_fp_out_next = mode_fp_in;
 
       case (round_mode)
         ROUND_NEAREST_EVEN: round = rr & (m0 | ss);
-        ROUND_ZERO: round = 1'b0;
+        ROUND_ZERO:         round = 1'b0;
       endcase
 
       if (rr | ss) begin
@@ -458,21 +458,21 @@ module fp_round #(
       end
 
       if (round) begin
-        flags_out_next[`F_INEXACT] = 1'b1;
+        flags_out_next[`F_INEXACT]          = 1'b1;
         {carry_out_next, mant_rounded_next} = mant_in + 'b1000;
       end else begin
         mant_rounded_next = mant_in;
-        carry_out_next = 1'b0;
+        carry_out_next    = 1'b0;
       end
     end else begin
       // Use existing data
       mant_rounded_next = mant_rounded;
-      carry_out_next = carry_out;
-      flags_out_next = flags_out;
+      carry_out_next    = carry_out;
+      flags_out_next    = flags_out;
 
-      exp_out_next = exp_out;
-      sign_out_next = sign_out;
-      mode_fp_out_next = mode_fp_out;
+      exp_out_next      = exp_out;
+      sign_out_next     = sign_out;
+      mode_fp_out_next  = mode_fp_out;
     end
   end
 
@@ -489,14 +489,14 @@ module fp_round #(
       mode_fp_out  <= 1'b0;
     end else begin
       mant_rounded <= mant_rounded_next;
-      carry_out <= carry_out_next;
-      flags_out <= flags_out_next;
+      carry_out    <= carry_out_next;
+      flags_out    <= flags_out_next;
 
-      valid_out <= !ready_in ? valid_out : valid_in;
+      valid_out    <= !ready_in ? valid_out : valid_in;
 
-      exp_out <= exp_out_next;
-      sign_out <= sign_out_next;
-      mode_fp_out <= mode_fp_out_next;
+      exp_out      <= exp_out_next;
+      sign_out     <= sign_out_next;
+      mode_fp_out  <= mode_fp_out_next;
     end
   end
 endmodule
