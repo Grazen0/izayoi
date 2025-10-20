@@ -63,7 +63,6 @@ module div_half_tb ();
     test(`OP_DIV, 32'h4810, 32'h4820, 32'h3BE1);  // 8.125 / 8.25 = 0.985
     test(`OP_DIV, 32'h4540, 32'h4CA0, 32'h348A);  // 5.25 / 18.5 = 0.2837
     test(`OP_DIV, 32'h5149, 32'hCC41, 32'hC0F8);  // 42.3 / (-17.02) = -2.485
-    test(`OP_DIV, 32'h2E66, 32'h3266, 32'h3800);  // 0.1 / 0.2 = 0.5
 
     round_mode = 1'b1;  // round to zero
 

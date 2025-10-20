@@ -65,9 +65,8 @@ module mul_single_tb ();
     test(`OP_MUL, 32'h4102_0000, 32'h4104_0000, 32'h4286_1000);  // 8.125 * 8.25 = 67.03125
     test(`OP_MUL, 32'h40A8_0000, 32'h4194_0000, 32'h42C2_4000);  // 5.25 * 18.5 = 97.125
     test(`OP_MUL, 32'h4229_3333, 32'hC188_28F6, 32'hC433_FC8B);  // 42.3 * (-17.02) = -719.946
-    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.02 (inexact)
-    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.3 (inexact)
     test(`OP_MUL, 32'h425A_CCCD, 32'h0E69_999A, 32'h1147_A7AF);  // 54.7 * 2.87e-30 = 1.5e-28
+    test(`OP_MUL, 32'h3DCC_CCCD, 32'h3E4C_CCCD, 32'h3CA3_D70B);  // 0.1 * 0.2 = ~0.02 (inexact)
 
     round_mode = 1'b1;  // round to zero
 
