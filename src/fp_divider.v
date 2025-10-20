@@ -2,10 +2,10 @@
 
 // LUT para aproximación inicial de 1/x
 module x0 #(
-    parameter NSIG = 22
+    parameter M_WIDTH = 24
 ) (
     input wire [9:0] in,
-    output wire [NSIG+1:0] out
+    output wire [M_WIDTH-1:0] out
 );
   reg [6:0] ROM[0:1023];
   wire [6:0] seven;
@@ -15,7 +15,7 @@ module x0 #(
   end
 
   assign seven = ROM[in];
-  assign out = (in == 0) ? {1'b1, seven, {(NSIG - 6) {1'b0}}} : {2'b01, seven, {(NSIG - 7) {1'b0}}};
+  assign out = (in == 0) ? {1'b1, seven, {(M_WIDTH - 8) {1'b0}}} : {2'b01, seven, {(M_WIDTH - 9) {1'b0}}};
 endmodule
 
 module fp_recip (
@@ -29,7 +29,6 @@ module fp_recip (
   parameter BIAS = 127;
 
   // Anchos internos
-  parameter NSIG = 22;
   parameter K = 10;
   parameter M_WIDTH = 1 + FRAC;
   parameter Y_WIDTH = M_WIDTH + 4;
@@ -60,7 +59,7 @@ module fp_recip (
 
   // LUT x0
   wire [K-1:0] x0_index;
-  wire [NSIG+1:0] x0_lut_out;
+  wire [M_WIDTH-1:0] x0_lut_out;
   assign x0_index = m_int[M_WIDTH-2:M_WIDTH-1-K];
 
   x0 x0_inst (
