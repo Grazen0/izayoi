@@ -1,8 +1,7 @@
 `include "macros.vh"
 
-// LUT para aproximación inicial de 1/x (IEEE-754 compatible)
+// LUT para aproximación inicial de 1/x
 module x0 #(
-    parameter NEXP = 5,
     parameter NSIG = 11
 ) (
     input wire [9:0] in,
