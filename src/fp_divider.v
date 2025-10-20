@@ -2,7 +2,7 @@
 
 // LUT para aproximación inicial de 1/x
 module x0 #(
-    parameter NSIG = 11
+    parameter NSIG = 22
 ) (
     input wire [9:0] in,
     output wire [NSIG+1:0] out
@@ -29,7 +29,7 @@ module fp_recip (
   parameter BIAS = 127;
 
   // Anchos internos
-  parameter NSIG = 11;
+  parameter NSIG = 22;
   parameter K = 10;
   parameter M_WIDTH = 1 + FRAC;
   parameter Y_WIDTH = M_WIDTH + 4;
@@ -67,8 +67,6 @@ module fp_recip (
       .in (x0_index),
       .out(x0_lut_out)
   );
-
-  wire [Y_WIDTH-1:0] x0_out_aligned = x0_lut_out << 11;
 
   // Lógica principal
   always @(*) begin
@@ -122,7 +120,7 @@ module fp_recip (
       end
 
       // Aproximación inicial
-      y0 = x0_out_aligned;
+      y0 = x0_lut_out;
 
       // Newton-Raphson iteración 1
       prod_my = m_int * y0;
