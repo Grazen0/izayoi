@@ -19,6 +19,7 @@ module sub_half_tb ();
   always #5 clk = ~clk;
 
   always @(posedge valid_out) begin
+    #1;
     result_reg <= result;
     flags_reg  <= flags;
   end
@@ -73,8 +74,8 @@ module sub_half_tb ();
     test(`OP_SUB, 32'h4248, 32'h416F, 32'h36C8);  // pi - e = ~4.24 (inexact)
 
     // Special cases
-    test(`OP_ADD, `ZERO_H, `ZERO_H, `ZERO_H);  // 0.0 - 0.0 = 0.0
-    test(`OP_ADD, `ZERO_H, `NEG_ZERO_H, `ZERO_H);  // 0.0 - (-0.0) = 0.0
+    test(`OP_SUB, `ZERO_H, `ZERO_H, `ZERO_H);  // 0.0 - 0.0 = 0.0
+    test(`OP_SUB, `ZERO_H, `NEG_ZERO_H, `ZERO_H);  // 0.0 - (-0.0) = 0.0
     test(`OP_SUB, `INF_H, 32'h4010_0000, `INF_H);  // Inf - 2.25 = Inf
     test(`OP_SUB, `NEG_INF_H, 32'h4010_0000, `NEG_INF_H);  // -Inf - 2.25 = -Inf
     test(`OP_SUB, `NAN_H, 32'hC188_28F6, `NAN_H);  // NaN - 42.3 = NaN, invalid

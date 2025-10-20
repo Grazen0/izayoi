@@ -19,6 +19,7 @@ module sub_single_tb ();
   always #5 clk = ~clk;
 
   always @(posedge valid_out) begin
+    #1;
     result_reg <= result;
     flags_reg  <= flags;
   end
