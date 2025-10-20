@@ -138,7 +138,7 @@ module fp_reciprocal (
       correction = TWO_FIXED - prod_my_shr;
       prod_ycorr = y1 * correction;
       y2 = prod_ycorr >> FRAC;
-      
+
       y_norm = y2;
       if (y_norm < ONE_FIXED) begin
         y_norm = y_norm << 1;
@@ -165,57 +165,4 @@ module fp_reciprocal (
       out_bits = {out_sign, out_exp, out_frac};
     end
   end
-endmodule
-
-
-module fp_divider (
-    input wire clk,
-    input wire rst_n,
-
-    input wire [31:0] op_a,
-    input wire [31:0] op_b,
-    input wire mode_fp,
-    input wire round_mode,
-
-    input  wire start,
-    input  wire ready_in,
-    output wire valid_out,
-    output wire ready_out,
-
-    output wire sign_out,
-    output wire [7:0] exp_out,
-    output wire [26:0] mant_out,
-    output wire [4:0] flags,
-    output wire mode_fp_out
-);
-  wire [31:0] b_inv;
-  wire [ 4:0] recip_flags;
-
-  fp_reciprocal recip (
-      .in_bits(op_b),
-      .out_bits(b_inv),
-      .except_flags(recip_flags)
-  );
-
-  fp_multiplier multiplier (
-      .clk  (clk),
-      .rst_n(rst_n),
-
-      .op_a(op_a),
-      .op_b(b_inv),
-      .mode_fp(mode_fp),
-      .round_mode(round_mode),
-
-      .initial_flags(recip_flags),
-      .start(start),
-      .ready_in(ready_in),
-      .valid_out(valid_out),
-      .ready_out(ready_out),
-
-      .sign_out(sign_out),
-      .exp_out(exp_out),
-      .mant_out(mant_out),
-      .flags(flags),
-      .mode_fp_out(mode_fp_out)
-  );
 endmodule
