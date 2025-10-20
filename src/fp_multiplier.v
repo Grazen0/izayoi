@@ -21,15 +21,24 @@ module mul_decode (
     output wire is_inf_a,
     output wire is_inf_b
 );
+  wire [7:0] raw_exp_a = op_a[30:23];
+  wire [7:0] raw_exp_b = op_b[30:23];
+
+  wire [22:0] raw_mant_a = op_a[22:0];
+  wire [22:0] raw_mant_b = op_b[22:0];
+
+  wire is_denorm_a = (raw_exp_a == 8'b0) && (raw_mant_a != 23'b0);
+  wire is_denorm_b = (raw_exp_b == 8'b0) && (raw_mant_b != 23'b0);
+
   always @(*) begin
     sign_a = op_a[31];
     sign_b = op_b[31];
 
-    exp_a  = op_a[30:23];
-    exp_b  = op_b[30:23];
+    exp_a  = is_denorm_a ? 8'b0 : raw_exp_a;
+    exp_b  = is_denorm_b ? 8'b0 : raw_exp_b;
 
-    mant_a = op_a[22:0];
-    mant_b = op_b[22:0];
+    mant_a = is_denorm_a ? 23'b0 : raw_mant_a;
+    mant_b = is_denorm_b ? 23'b0 : raw_mant_b;
   end
 
   assign is_zero_a = (exp_a == 8'b0) && (mant_a == 23'b0);
